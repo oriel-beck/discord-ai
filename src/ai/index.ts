@@ -5,18 +5,18 @@ import { config } from "dotenv";
 config();
 
 const openai = new OpenAI({ apiKey: process.env.OPEN_AI_API_KEY });
-const MODEL = "gpt-4o-mini" //"llama-3.3-70b-versatile"; //"llama3-70b-8192"
+const MODEL = "gpt-4o-mini"; //"llama-3.3-70b-versatile"; //"llama3-70b-8192"
 
 export async function getGroqChatCompletion(
   messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
 ) {
   return openai.chat.completions.create({
-    model:  MODEL,
+    model: MODEL,
     messages,
     tools,
-    tool_choice: 'auto',
-    stop: 'END'
-  })
+    tool_choice: "auto",
+    stop: "END",
+  });
   // return groq.chat.completions.create({
   //   model: MODEL,
   //   messages,
@@ -32,15 +32,13 @@ export async function handleConversation(
 ) {
   while (true) {
     const chatCompletion = await getGroqChatCompletion(messages);
+    console.log("AI Replied", chatCompletion.choices[0].message);
 
     if (
       !chatCompletion.choices[0] ||
       chatCompletion.choices[0].finish_reason === "stop"
     ) {
-      console.log(
-        "AI Finished with:",
-        chatCompletion.choices[0].message.content
-      );
+      console.log("AI Finished");
       return chatCompletion.choices[0].message.content;
     }
 
@@ -50,7 +48,7 @@ export async function handleConversation(
       const toolResponses: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
         [];
       for (const tool of chatCompletion.choices[0].message.tool_calls) {
-        console.log(tool.function.arguments)
+        console.log("Tool use", tool.function.name);
         const result = await toolManager.executeTool(
           tool.function.name,
           tool.function.arguments
@@ -60,7 +58,6 @@ export async function handleConversation(
           content: JSON.stringify(result),
           tool_call_id: tool.id,
         });
-        console.log("Tool response:", JSON.stringify(result));
       }
       messages = messages.concat(toolResponses);
     }

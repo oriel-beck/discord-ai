@@ -13,7 +13,9 @@ const getAllChannels: ToolFunction<{
     )
     .map((c) => `name: ${c.name}, id: ${c.id}, type: ${ChannelType[c.type]}`)
     .join("\n");
-  return `If you cannot find the channel you are looking for here skip the operation and report to the executor\nYou are allowed to send messages and embeds to channel types of GuildText, GuildVoice, GuildAnnouncement, GuildNews, AnnouncementThread, PublicThread, PrivateThread and GuildStageVoice\nList of channels:\n\n${channelList}`;
+  return {
+    data: `If you cannot find the channel you are looking for here skip the operation and report to the executor\nYou are allowed to send messages and embeds to channel types of GuildText, GuildVoice, GuildAnnouncement, GuildNews, AnnouncementThread, PublicThread, PrivateThread and GuildStageVoice\nList of channels:\n\n${channelList}`,
+  };
 };
 
 export default getAllChannels;

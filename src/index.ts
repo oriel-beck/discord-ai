@@ -44,7 +44,7 @@ client.on(Events.MessageCreate, async (message) => {
       `You were executed in the server ${message.guildId}, the channel ${message.channelId} and by the user ${message.author.id}`
     );
     const toolManager = new ToolManager(
-      message.author.id,
+      message.member,
       message.client,
       message.channel as GuildTextBasedChannel
     );

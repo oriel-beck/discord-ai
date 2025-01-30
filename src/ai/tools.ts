@@ -1,20 +1,21 @@
-import { Client, GuildTextBasedChannel } from "discord.js";
+import { Client, GuildMember, GuildTextBasedChannel } from "discord.js";
 import OpenAI from "openai";
-import addRole from "./tools/add-role.js";
+import addRoles from "./tools/add-roles.js";
 import getAllMembers from "./tools/get-all-members.js";
 import getDiscordMemberByUsername from "./tools/get-discord-member.js";
-import getDiscordRoles from "./tools/get-discord-roles.js";
+import getAllRoles from "./tools/get-discord-roles.js";
 import sendDiscordMessage from "./tools/send-discord-message.js";
-import { stringify } from "./util.js";
 import getAllChannels from "./tools/get-discord-channels.js";
+import removeRoles from "./tools/remove-roles.js";
+import { ToolFunction } from "./types.js";
 
 export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
     type: "function",
     function: {
-      name: "get_discord_server_roles",
+      name: "get_all_discord_roles",
       description:
-        "Gets all the roles in a discord server, used for finding role IDs by role names",
+        "Gets all the roles, used for finding one or multiple role IDs by names",
     },
   },
   {
@@ -40,23 +41,56 @@ export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
   {
     type: "function",
     function: {
-      name: "add_role",
+      name: "add_roles",
       description:
-        "Adds a discord role to a specific member by using a role ID and a user ID, should not be used with non Discord IDs",
+        "Adds one or more Discord roles to a specific member by using role IDs and a user ID. Used to add one or multiple roles at a time, this should not be used more than once per userId.",
       strict: true,
       parameters: {
         type: "object",
         additionalProperties: false,
-        required: ["userId", "roleId"],
+        required: ["userId", "roleIds"],
         properties: {
           userId: {
             type: "string",
             description: "The user ID of the member to add the role to",
           },
-          roleId: {
-            type: "string",
+          roleIds: {
+            type: "array",
             description:
-              "The role ID to add the the specified member in the specified server",
+              "The role ID to add to the specified member in the specified server",
+            items: {
+              type: "string",
+              description: "The role ID to add to the specified member",
+            },
+          },
+        },
+      },
+    },
+  },
+  {
+    type: "function",
+    function: {
+      name: "remove_roles",
+      description:
+        "Removes one or more Discord roles from a specific member by using role IDs and a user ID. Used to remove one or multiple roles at a time, this should not be used more than once per userId.",
+      strict: true,
+      parameters: {
+        type: "object",
+        additionalProperties: false,
+        required: ["userId", "roleIds"],
+        properties: {
+          userId: {
+            type: "string",
+            description: "The user ID of the member to remove the role from",
+          },
+          roleIds: {
+            type: "array",
+            description:
+              "The role ID to remove from the specified member in the specified server",
+            items: {
+              type: "string",
+              description: "The role ID to remove to the specified member",
+            },
           },
         },
       },
@@ -230,18 +264,19 @@ export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
 
 export class ToolManager {
   constructor(
-    private executor: string,
+    private member: GuildMember,
     private client: Client,
     private channel: GuildTextBasedChannel
   ) {}
   // Any is required due to the complex typing here
-  toolMapping: Record<string, (args: any) => unknown | undefined> = {
-    get_discord_server_roles: (args) => getDiscordRoles(args),
+  toolMapping: Record<string, ToolFunction<any>> = {
     get_discord_member_by_username: (args) => getDiscordMemberByUsername(args),
-    add_role: (args) => addRole(args),
+    add_roles: (args) => addRoles(args),
+    remove_role: (args) => removeRoles(args),
     send_message: (args) => sendDiscordMessage(args),
     get_all_discord_members: (args) => getAllMembers(args),
     get_all_discord_channels: (args) => getAllChannels(args),
+    get_all_discord_roles: (args) => getAllRoles(args),
   };
 
   async executeTool(functionName: string, args: string) {
@@ -251,13 +286,15 @@ export class ToolManager {
       let json = JSON.parse(args);
       json = {
         ...json,
-        executor: this.executor,
+        member: this.member,
         client: this.client,
         channel: this.channel,
         guild: this.channel.guild,
       };
       const result = await func(json);
-      return stringify(result);
+      console.log("Tool result:", result);
+      if (result.error) return `Error: ${result.error}`;
+      return result.data;
     } catch (ex) {
       console.error(ex);
       return {

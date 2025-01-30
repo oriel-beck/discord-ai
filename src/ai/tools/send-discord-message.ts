@@ -6,7 +6,12 @@ const sendDiscordMessage: ToolFunction<{
   content?: string;
   channelId?: string;
 }> = async ({ channel, embeds, content, channelId, guild }) => {
-  console.log("Sending embed to", channelId || "Current Channel", "in", guild.id)
+  console.log(
+    "Sending embed to",
+    channelId || "Current Channel",
+    "in",
+    guild.id
+  );
   if (channelId) {
     if (!/\d{17,20}/.test(channelId)) return { error: "Invalid channel ID" };
     const gotChannel = guild.channels.cache.get(channelId);
@@ -22,7 +27,7 @@ const sendDiscordMessage: ToolFunction<{
       embeds,
     })
     .catch((err) => console.log(err));
-  return !!sent;
+  return sent ? { data: "Sent message" } : { error: "Failed to send message" };
 };
 
 export default sendDiscordMessage;
