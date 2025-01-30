@@ -37,7 +37,7 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
         },
         roleColor: {
           type: ["number", "null"],
-          description: "Decimal or #hex color",
+          description: "Hex or Decimal color",
         },
       },
     },

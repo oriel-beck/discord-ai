@@ -12,6 +12,7 @@ import addRoles from "./tools/roles/add-roles.js";
 import getAllRoles from "./tools/roles/get-discord-roles.js";
 import removeRoles from "./tools/roles/remove-roles.js";
 import { ToolFunction } from "./types.js";
+import createRole from "./tools/roles/create-role.js";
 
 const toolMappingForPermissions = new Map<
   PermissionsString,
@@ -22,6 +23,7 @@ const toolMappingForPermissions = new Map<
     {
       add_roles: (args) => addRoles(args),
       remove_role: (args) => removeRoles(args),
+      create_role: (args) => createRole(args)
     },
   ],
   [
@@ -44,7 +46,9 @@ export class ToolManager {
     private member: GuildMember,
     private client: Client,
     private channel: GuildTextBasedChannel,
-  ) {}
+  ) {
+    this.createToolMapping(member);
+  }
   // Any is required due to the complex typing here
   toolMapping: Record<string, ToolFunction<any>> = {};
 
