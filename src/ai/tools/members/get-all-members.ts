@@ -1,6 +1,7 @@
 import SuperMap from "@thunder04/supermap";
-import type { ToolFunction } from "../types.js";
+import type { ToolFunction } from "../../types.js";
 import type { Collection, GuildMember, Snowflake } from "discord.js";
+import OpenAI from "openai";
 
 const cache = new SuperMap<string, Collection<Snowflake, GuildMember>>({
   intervalTime: 300000,
@@ -38,5 +39,13 @@ function formatMembers(members: Collection<Snowflake, GuildMember>) {
     })
     .join("\n");
 }
+
+export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
+  type: "function",
+  function: {
+    name: "get_all_discord_members",
+    description: "Get all members/users in the Discord server",
+  },
+};
 
 export default getAllMembers;

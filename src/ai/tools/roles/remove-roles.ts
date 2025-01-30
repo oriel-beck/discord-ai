@@ -1,4 +1,5 @@
-import { ToolFunction, ToolResult } from "../types.js";
+import OpenAI from "openai";
+import { ToolFunction, ToolResult } from "../../types.js";
 
 const removeRoles: ToolFunction<{
   userId: string;
@@ -50,6 +51,36 @@ const removeRoles: ToolFunction<{
   };
   if (errors.length) res.error = errors.join("\n");
   return res;
+};
+
+export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
+  type: "function",
+  function: {
+    name: "remove_roles",
+    description:
+      "Removes one or more Discord roles from a specific member by using one or more role IDs and a user ID. Used to remove one or multiple roles at a time, this should not be used more than once per userId.",
+    strict: true,
+    parameters: {
+      type: "object",
+      additionalProperties: false,
+      required: ["userId", "roleIds"],
+      properties: {
+        userId: {
+          type: "string",
+          description: "The user ID of the member to remove the role from",
+        },
+        roleIds: {
+          type: "array",
+          description:
+            "The role ID to remove from the specified member in the specified server",
+          items: {
+            type: "string",
+            description: "The role ID to remove to the specified member",
+          },
+        },
+      },
+    },
+  },
 };
 
 export default removeRoles;

@@ -1,66 +1,107 @@
-// import Groq from "groq-sdk";
 import OpenAI from "openai";
-import { ToolManager, tools } from "./tools.js";
-import { config } from "dotenv";
+import { ToolManager } from "./tools.js";
 import { inspect } from "util";
-config();
+import { readdir, stat } from "fs/promises";
+import { join } from "path";
+import { ToolFunction } from "./types.js";
 
-const openai = new OpenAI({ apiKey: process.env.OPEN_AI_API_KEY });
-const MODEL = "gpt-4o-mini"; //"llama-3.3-70b-versatile"; //"llama3-70b-8192"
+const MODEL = "gpt-4o-mini";
 
-export async function getGroqChatCompletion(
-  messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
-) {
-  return openai.chat.completions.create({
-    model: MODEL,
-    messages,
-    tools,
-    tool_choice: "auto",
-    stop: "END",
-  });
-  // return groq.chat.completions.create({
-  //   model: MODEL,
-  //   messages,
-  //   tools,
-  //   tool_choice: "auto",
-  //   stop: "END",
-  // });
-}
+export class DiscordAI {
+  openai!: OpenAI;
+  constructor(apiKey: string, toolFolderPath: string, private model = MODEL) {
+    this.openai = new OpenAI({ apiKey });
+    this.init(toolFolderPath);
+  }
 
-export async function handleConversation(
-  messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
-  toolManager: ToolManager
-) {
-  while (true) {
-    const chatCompletion = await getGroqChatCompletion(messages);
-    console.log("AI Replied", inspect(chatCompletion.choices[0].message.tool_calls, false, 2));
+  tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [];
 
-    if (
-      !chatCompletion.choices[0] ||
-      chatCompletion.choices[0].finish_reason === "stop"
-    ) {
-      console.log("AI Finished");
-      return chatCompletion.choices[0].message.content;
+  // Load all tools
+  async init(path: string) {
+    console.log(`DiscordAI: Loading tools from ${path}`);
+    const files = await getTsFiles(path);
+    for (const tool of files) {
+      const {
+        definition,
+      }: {
+        default: ToolFunction;
+        definition?: OpenAI.Chat.Completions.ChatCompletionTool;
+      } = await import(`file://${tool}`);
+      if (definition) this.tools.push(definition);
     }
+    console.log(`DiscordAI: Loaded ${this.tools.length} tools`);
+  }
 
-    messages.push(chatCompletion.choices[0].message);
+  async handleConversation(
+    messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+    toolManager: ToolManager
+  ) {
+    while (true) {
+      const chatCompletion = await this.getChatCompletion(messages);
+      console.log(
+        "AI Replied",
+        inspect(chatCompletion.choices[0].message.tool_calls, false, 2)
+      );
 
-    if (chatCompletion.choices[0].message.tool_calls) {
-      const toolResponses: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
-        [];
-      for (const tool of chatCompletion.choices[0].message.tool_calls) {
-        console.log("Tool use", tool.function.name);
-        const result = await toolManager.executeTool(
-          tool.function.name,
-          tool.function.arguments
-        );
-        toolResponses.push({
-          role: "tool",
-          content: result || "Error: No result",
-          tool_call_id: tool.id,
-        });
+      if (
+        !chatCompletion.choices[0] ||
+        chatCompletion.choices[0].finish_reason === "stop"
+      ) {
+        console.log("AI Finished");
+        return chatCompletion.choices[0].message.content;
       }
-      messages = messages.concat(toolResponses);
+
+      messages.push(chatCompletion.choices[0].message);
+
+      if (chatCompletion.choices[0].message.tool_calls) {
+        const toolResponses: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
+          [];
+        for (const tool of chatCompletion.choices[0].message.tool_calls) {
+          console.log("Tool use", tool.function.name);
+          const result = await toolManager.executeTool(
+            tool.function.name,
+            tool.function.arguments
+          );
+          toolResponses.push({
+            role: "tool",
+            content: result || "Error: No result",
+            tool_call_id: tool.id,
+          });
+        }
+        messages = messages.concat(toolResponses);
+      }
     }
   }
+
+  async getChatCompletion(
+    messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
+  ) {
+    return this.openai.chat.completions.create({
+      messages,
+      model: this.model,
+      tools: this.tools,
+      tool_choice: "auto",
+      stop: "END",
+    });
+  }
+}
+
+async function getTsFiles(
+  dir: string,
+  fileList: string[] = []
+): Promise<string[]> {
+  const files = await readdir(dir);
+
+  for (const file of files) {
+    const filePath = join(dir, file);
+    const stats = await stat(filePath);
+
+    if (stats.isDirectory()) {
+      await getTsFiles(filePath, fileList);
+    } else if (filePath.endsWith(".js")) {
+      fileList.push(filePath);
+    }
+  }
+
+  return fileList;
 }

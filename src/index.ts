@@ -5,11 +5,17 @@ import {
   GatewayIntentBits,
   GuildTextBasedChannel,
 } from "discord.js";
-import { handleConversation } from "./ai/index.js";
 import { initMessages } from "./ai/init.js";
 import { ToolManager } from "./ai/tools.js";
+import { join } from "path";
+import { DiscordAI } from "./ai/index.js";
 
 config();
+
+const discordAi = new DiscordAI(
+  process.env.OPEN_AI_API_KEY!,
+  join(import.meta.dirname, 'ai', 'tools')
+);
 
 const managerRole = "1334178594494091364";
 const allowedGuild = "1334178302356619335";
@@ -58,7 +64,7 @@ client.on(Events.MessageCreate, async (message) => {
       );
     }, 3000);
     try {
-      const res = await handleConversation(messages, toolManager);
+      const res = await discordAi.handleConversation(messages, toolManager);
       clearInterval(interval);
       if (res) waitingMessage.edit(`${res}\n\n${execString(startTime)}`);
       else

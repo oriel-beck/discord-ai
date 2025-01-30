@@ -1,4 +1,5 @@
-import { ToolFunction, ToolResult } from "../types.js";
+import OpenAI from "openai";
+import { ToolFunction, ToolResult } from "../../types.js";
 
 const addRoles: ToolFunction<{ userId: string; roleIds: string[] }> = async ({
   roleIds,
@@ -39,7 +40,9 @@ const addRoles: ToolFunction<{ userId: string; roleIds: string[] }> = async ({
     (await guild.members.fetch(userId).catch(() => null));
   if (!member) return { error: `Failed to find the member ${userId}` };
 
-  const add = await member.roles.add(useableIds).catch((err) => console.log(err));
+  const add = await member.roles
+    .add(useableIds)
+    .catch((err) => console.log(err));
   if (!add)
     return {
       error: `Failed to add the roles ${useableIds.join(
@@ -51,6 +54,36 @@ const addRoles: ToolFunction<{ userId: string; roleIds: string[] }> = async ({
   };
   if (errors.length) res.error = errors.join("\n");
   return res;
+};
+
+export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
+  type: "function",
+  function: {
+    name: "add_roles",
+    description:
+      "Adds one or more Discord roles to a specific member by using one or more role IDs and a user ID. Used to add one or multiple roles at a time, this should not be used more than once per userId.",
+    strict: true,
+    parameters: {
+      type: "object",
+      additionalProperties: false,
+      required: ["userId", "roleIds"],
+      properties: {
+        userId: {
+          type: "string",
+          description: "The user ID of the member to add the role to",
+        },
+        roleIds: {
+          type: "array",
+          description:
+            "The role ID to add to the specified member in the specified server",
+          items: {
+            type: "string",
+            description: "The role ID to add to the specified member",
+          },
+        },
+      },
+    },
+  },
 };
 
 export default addRoles;
