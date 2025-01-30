@@ -41,7 +41,7 @@ client.on(Events.MessageCreate, async (message) => {
     console.log("Incoming message:", query);
     const messages = initMessages(
       query,
-      `You were executed in the server ${message.guildId}, the channel ${message.channelId} and by the user ${message.author.id}`
+      `You were executed in the server ${message.guildId}\nChannel: ${message.channelId}\nExecutor user ID: ${message.author.id}\nYour role position is: ${message.guild?.members.me?.roles.highest.position}`
     );
     const toolManager = new ToolManager(
       message.member,
@@ -52,7 +52,9 @@ client.on(Events.MessageCreate, async (message) => {
     const waitingMessage = await message.reply("Executing for 0s");
     const interval = setInterval(() => {
       waitingMessage.edit(
-        `Executing for ${((new Date().getTime() - startTime) / 1000).toFixed(2)}s`
+        `Executing for ${((new Date().getTime() - startTime) / 1000).toFixed(
+          2
+        )}s`
       );
     }, 3000);
     try {

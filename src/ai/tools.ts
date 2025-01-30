@@ -43,7 +43,7 @@ export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     function: {
       name: "add_roles",
       description:
-        "Adds one or more Discord roles to a specific member by using role IDs and a user ID. Used to add one or multiple roles at a time, this should not be used more than once per userId.",
+        "Adds one or more Discord roles to a specific member by using one or more role IDs and a user ID. Used to add one or multiple roles at a time, this should not be used more than once per userId.",
       strict: true,
       parameters: {
         type: "object",
@@ -72,7 +72,7 @@ export const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
     function: {
       name: "remove_roles",
       description:
-        "Removes one or more Discord roles from a specific member by using role IDs and a user ID. Used to remove one or multiple roles at a time, this should not be used more than once per userId.",
+        "Removes one or more Discord roles from a specific member by using one or more role IDs and a user ID. Used to remove one or multiple roles at a time, this should not be used more than once per userId.",
       strict: true,
       parameters: {
         type: "object",
@@ -297,9 +297,7 @@ export class ToolManager {
       return result.data;
     } catch (ex) {
       console.error(ex);
-      return {
-        error: `Failed to execute tool ${functionName} with args ${args}`,
-      };
+      return `Failed to execute tool ${functionName} with args ${args}`;
     }
   }
 }

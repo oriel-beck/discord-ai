@@ -2,6 +2,7 @@
 import OpenAI from "openai";
 import { ToolManager, tools } from "./tools.js";
 import { config } from "dotenv";
+import { inspect } from "util";
 config();
 
 const openai = new OpenAI({ apiKey: process.env.OPEN_AI_API_KEY });
@@ -32,7 +33,7 @@ export async function handleConversation(
 ) {
   while (true) {
     const chatCompletion = await getGroqChatCompletion(messages);
-    console.log("AI Replied", chatCompletion.choices[0].message);
+    console.log("AI Replied", inspect(chatCompletion.choices[0].message.tool_calls, false, 2));
 
     if (
       !chatCompletion.choices[0] ||
@@ -55,7 +56,7 @@ export async function handleConversation(
         );
         toolResponses.push({
           role: "tool",
-          content: JSON.stringify(result),
+          content: result || "Error: No result",
           tool_call_id: tool.id,
         });
       }
