@@ -1,6 +1,6 @@
 import OpenAI from "openai";
 import { ToolFunction } from "../../types.js";
-import { ColorResolvable } from "discord.js";
+import { ColorResolvable, PermissionsString } from "discord.js";
 
 const createRole: ToolFunction<{
   roleName: string;
@@ -43,5 +43,7 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
     },
   },
 };
+
+export const permission: PermissionsString = "ManageRoles";
 
 export default createRole;

@@ -4,8 +4,20 @@ import { inspect } from "util";
 import { readdir, stat } from "fs/promises";
 import { join } from "path";
 import { ToolFunction } from "./types.js";
+import {
+  GuildMember,
+  GuildTextBasedChannel,
+  Message,
+  PermissionsString,
+} from "discord.js";
 
 const MODEL = "gpt-4o-mini";
+
+interface ToolFile {
+  default: ToolFunction;
+  definition: OpenAI.Chat.Completions.ChatCompletionTool;
+  permission?: PermissionsString;
+}
 
 export class DiscordAI {
   openai!: OpenAI;
@@ -14,30 +26,42 @@ export class DiscordAI {
     this.init(toolFolderPath);
   }
 
-  tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [];
+  tools: ToolFile[] = [];
+  toolMapping: Record<string, ToolFunction<any>> = {};
 
   // Load all tools
   async init(path: string) {
     console.log(`DiscordAI: Loading tools from ${path}`);
     const files = await getTsFiles(path);
     for (const tool of files) {
-      const {
-        definition,
-      }: {
-        default: ToolFunction;
-        definition?: OpenAI.Chat.Completions.ChatCompletionTool;
-      } = await import(`file://${tool}`);
-      if (definition) this.tools.push(definition);
+      const toolFile: Partial<ToolFile> = await import(`file://${tool}`);
+      if (toolFile.default && toolFile.definition) {
+        this.tools.push(toolFile as ToolFile);
+        this.toolMapping[toolFile.definition.function.name] = toolFile.default;
+      }
     }
     console.log(`DiscordAI: Loaded ${this.tools.length} tools`);
   }
 
   async handleConversation(
     messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
-    toolManager: ToolManager
+    message: Message
   ) {
+    const tools = this.getAvailableTools(message.member!);
+
+    const toolManager = new ToolManager(
+      message.member!,
+      message.client,
+      message.channel as GuildTextBasedChannel,
+      // Even tho the tool manager has access to all tools, the AI only sees the available tools according to the member's permission
+      this.toolMapping
+    );
+
     while (true) {
-      const chatCompletion = await this.getChatCompletion(messages);
+      const chatCompletion = await this.getChatCompletion(
+        messages,
+        tools.map((t) => t.definition)
+      );
       console.log(
         "AI Replied",
         inspect(chatCompletion.choices[0].message.tool_calls, false, 2)
@@ -73,16 +97,27 @@ export class DiscordAI {
     }
   }
 
-  async getChatCompletion(
-    messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[]
+  private async getChatCompletion(
+    messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
+    tools: OpenAI.Chat.Completions.ChatCompletionTool[]
   ) {
     return this.openai.chat.completions.create({
       messages,
+      tools,
       model: this.model,
-      tools: this.tools,
       tool_choice: "auto",
       stop: "END",
     });
+  }
+
+  private getAvailableTools(member: GuildMember) {
+    const availableTools: ToolFile[] = [];
+    for (const tool of this.tools) {
+      if (!tool.permission || member.permissions.has(tool.permission)) {
+        availableTools.push(tool);
+      }
+    }
+    return availableTools;
   }
 }
 
@@ -105,3 +140,5 @@ async function getTsFiles(
 
   return fileList;
 }
+
+function createToolMapping(member: GuildMember, tools: ToolFile[]) {}

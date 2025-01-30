@@ -1,4 +1,4 @@
-import { APIEmbed } from "discord.js";
+import { APIEmbed, PermissionsString } from "discord.js";
 import { ToolFunction } from "../../types.js";
 import OpenAI from "openai";
 
@@ -179,5 +179,7 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
     },
   },
 };
+
+export const permission: PermissionsString = "ManageGuild";
 
 export default sendDiscordMessage;

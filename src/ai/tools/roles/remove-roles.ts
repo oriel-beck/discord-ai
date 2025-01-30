@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { ToolFunction, ToolResult } from "../../types.js";
+import { PermissionsString } from "discord.js";
 
 const removeRoles: ToolFunction<{
   userId: string;
@@ -82,5 +83,7 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
     },
   },
 };
+
+export const permission: PermissionsString = "ManageRoles";
 
 export default removeRoles;

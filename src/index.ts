@@ -40,20 +40,19 @@ client.on(Events.MessageCreate, async (message) => {
     !message.member?.roles.cache.has(managerRole)
   )
     return;
+
   const split = message.content.split(" ");
+
   if (split[0] === "+chat") {
     if (!split[1]) return message.reply("You need to tell me what to do");
+
     const query = split.splice(1).join(" ");
     console.log("Incoming message:", query);
     const messages = initMessages(
       query,
       `You were executed in the server ${message.guildId}\nChannel: ${message.channelId}\nExecutor user ID: ${message.author.id}\nYour role position is: ${message.guild?.members.me?.roles.highest.position}`
     );
-    const toolManager = new ToolManager(
-      message.member,
-      message.client,
-      message.channel as GuildTextBasedChannel
-    );
+
     const startTime = new Date().getTime();
     const waitingMessage = await message.reply("Executing for 0s");
     const interval = setInterval(() => {
@@ -63,8 +62,9 @@ client.on(Events.MessageCreate, async (message) => {
         )}s`
       );
     }, 3000);
+    
     try {
-      const res = await discordAi.handleConversation(messages, toolManager);
+      const res = await discordAi.handleConversation(messages, message);
       clearInterval(interval);
       if (res) waitingMessage.edit(`${res}\n\n${execString(startTime)}`);
       else

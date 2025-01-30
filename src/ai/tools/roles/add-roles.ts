@@ -1,5 +1,6 @@
 import OpenAI from "openai";
 import { ToolFunction, ToolResult } from "../../types.js";
+import { PermissionsString } from "discord.js";
 
 const addRoles: ToolFunction<{ userId: string; roleIds: string[] }> = async ({
   roleIds,
@@ -85,5 +86,7 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
     },
   },
 };
+
+export const permission: PermissionsString = "ManageRoles";
 
 export default addRoles;
