@@ -2,27 +2,52 @@ import { PermissionsString } from 'discord.js';
 import { ToolFunction } from '../../types.js';
 import OpenAI from 'openai';
 
-const deleteRole: ToolFunction<{ roleId: string }> = async ({ guild, roleId }) => {
-  if (!/\d{17,20}/.test(roleId)) return { data: `The role ${roleId} is not a valid role ID` };
-  const deleted = await guild.roles.delete(roleId).then(() => true).catch((err) => console.log(err));
-  if (deleted) return { data: `${roleId} was deleted, do not try to add, remove, or modify it` };
-  else return { error: `Failed to delete ${roleId}` };
+const deleteRoles: ToolFunction<{
+  roleIds: string[];
+}> = async ({ guild, roleIds }) => {
+  if (!Array.isArray(roleIds) || roleIds.length === 0) {
+    return { error: 'No roles provided for creation' };
+  }
+
+  const deletedRoles = [];
+  const errors = [];
+
+  for (const roleId of roleIds) {
+    if (!/\d{17,20}/.test(roleId)) {
+      errors.push(`${roleId} is not a valid role ID`)
+      continue;
+    }
+    try {
+      const role = await guild.roles.delete(roleId);
+      deletedRoles.push(`Deleted the role ${roleId}`);
+    } catch (err) {
+      errors.push(`Failed to delete the role ${roleId}: ${(err as Error).message}`);
+    }
+  }
+
+  return {
+    data: deletedRoles.length ? deletedRoles.join('\n') : undefined,
+    error: errors.length ? errors.join('\n') : undefined,
+  };
 };
 
 export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
   type: 'function',
   function: {
-    name: 'delete_role',
-    description: 'Deletes a Discord role',
+    name: 'delete_roles',
+    description: 'Deletes multiple Discord roles',
     strict: true,
     parameters: {
       type: 'object',
-      required: ['roleId'],
+      required: ['roleIds'],
       additionalProperties: false,
       properties: {
-        roleId: {
-          type: 'string',
-          description: 'The role ID of the role to delete',
+        roleIds: {
+          type: 'array',
+          description: 'An array of role IDs to delete',
+          items: {
+            type: 'string',
+          },
         },
       },
     },
@@ -31,4 +56,4 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
 
 export const permission: PermissionsString = 'ManageRoles';
 
-export default deleteRole;
+export default deleteRoles;
