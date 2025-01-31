@@ -1,9 +1,5 @@
-import {
-  Client,
-  GuildMember,
-  GuildTextBasedChannel
-} from "discord.js";
-import { ToolFunction } from "./types.js";
+import { Client, GuildMember, GuildTextBasedChannel } from 'discord.js';
+import { ToolFunction } from './types.js';
 
 export class ToolManager {
   constructor(
@@ -27,7 +23,7 @@ export class ToolManager {
         guild: this.channel.guild,
       };
       const result = await func(json);
-      console.log("Tool result:", result);
+      console.log('Tool result:', result);
       if (result.error) return `Error: ${result.error}`;
       return result.data;
     } catch (ex) {

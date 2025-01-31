@@ -1,17 +1,12 @@
-import OpenAI from "openai";
-import { ToolManager } from "./tools.js";
-import { inspect } from "util";
-import { readdir, stat } from "fs/promises";
-import { join } from "path";
-import { ToolFunction } from "./types.js";
-import {
-  GuildMember,
-  GuildTextBasedChannel,
-  Message,
-  PermissionsString,
-} from "discord.js";
+import OpenAI from 'openai';
+import { ToolManager } from './tools.js';
+import { inspect } from 'util';
+import { readdir, stat } from 'fs/promises';
+import { join } from 'path';
+import { ToolFunction } from './types.js';
+import { GuildMember, GuildTextBasedChannel, Message, PermissionsString } from 'discord.js';
 
-const MODEL = "gpt-4o-mini";
+const MODEL = 'gpt-4o-mini';
 
 interface ToolFile {
   default: ToolFunction;
@@ -21,7 +16,11 @@ interface ToolFile {
 
 export class DiscordAI {
   openai!: OpenAI;
-  constructor(apiKey: string, toolFolderPath: string, private model = MODEL) {
+  constructor(
+    apiKey: string,
+    toolFolderPath: string,
+    private model = MODEL
+  ) {
     this.openai = new OpenAI({ apiKey });
     this.init(toolFolderPath);
   }
@@ -43,10 +42,7 @@ export class DiscordAI {
     console.log(`DiscordAI: Loaded ${this.tools.length} tools`);
   }
 
-  async handleConversation(
-    messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
-    message: Message
-  ) {
+  async handleConversation(messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[], message: Message) {
     const tools = this.getAvailableTools(message.member!);
 
     const toolManager = new ToolManager(
@@ -60,35 +56,25 @@ export class DiscordAI {
     while (true) {
       const chatCompletion = await this.getChatCompletion(
         messages,
-        tools.map((t) => t.definition)
+        tools.map(t => t.definition)
       );
-      console.log(
-        "AI Replied",
-        inspect(chatCompletion.choices[0].message.tool_calls, false, 2)
-      );
+      console.log('AI Replied', inspect(chatCompletion.choices[0].message.tool_calls, false, 2));
 
-      if (
-        !chatCompletion.choices[0] ||
-        chatCompletion.choices[0].finish_reason === "stop"
-      ) {
-        console.log("AI Finished");
+      if (!chatCompletion.choices[0] || chatCompletion.choices[0].finish_reason === 'stop') {
+        console.log('AI Finished');
         return chatCompletion.choices[0].message.content;
       }
 
       messages.push(chatCompletion.choices[0].message);
 
       if (chatCompletion.choices[0].message.tool_calls) {
-        const toolResponses: OpenAI.Chat.Completions.ChatCompletionMessageParam[] =
-          [];
+        const toolResponses: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
         for (const tool of chatCompletion.choices[0].message.tool_calls) {
-          console.log("Tool use", tool.function.name);
-          const result = await toolManager.executeTool(
-            tool.function.name,
-            tool.function.arguments
-          );
+          console.log('Tool use', tool.function.name);
+          const result = await toolManager.executeTool(tool.function.name, tool.function.arguments);
           toolResponses.push({
-            role: "tool",
-            content: result || "Error: No result",
+            role: 'tool',
+            content: result || 'Error: No result',
             tool_call_id: tool.id,
           });
         }
@@ -97,16 +83,13 @@ export class DiscordAI {
     }
   }
 
-  private async getChatCompletion(
-    messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[],
-    tools: OpenAI.Chat.Completions.ChatCompletionTool[]
-  ) {
+  private async getChatCompletion(messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[], tools: OpenAI.Chat.Completions.ChatCompletionTool[]) {
     return this.openai.chat.completions.create({
       messages,
       tools,
       model: this.model,
-      tool_choice: "auto",
-      stop: "END",
+      tool_choice: 'auto',
+      stop: 'END',
     });
   }
 
@@ -121,10 +104,7 @@ export class DiscordAI {
   }
 }
 
-async function getTsFiles(
-  dir: string,
-  fileList: string[] = []
-): Promise<string[]> {
+async function getTsFiles(dir: string, fileList: string[] = []): Promise<string[]> {
   const files = await readdir(dir);
 
   for (const file of files) {
@@ -133,7 +113,7 @@ async function getTsFiles(
 
     if (stats.isDirectory()) {
       await getTsFiles(filePath, fileList);
-    } else if (filePath.endsWith(".js")) {
+    } else if (filePath.endsWith('.js')) {
       fileList.push(filePath);
     }
   }
