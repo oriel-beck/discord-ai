@@ -40,6 +40,16 @@ export class DiscordAI {
       }
     }
     console.log(`DiscordAI: Loaded ${this.tools.length} tools`);
+
+    if (!process.env.OPEN_AI_ASSISTANT_ID || !(await this.getAssitant(process.env.OPEN_AI_ASSISTANT_ID!))) {
+      const newAssistant = await this.createAssistant();
+      throw new Error(
+        `DiscordAI: Failed to start DiscordAI. Could not find a assistant.\nI created an assistant for you, please set '${newAssistant.id}' as the env value of 'OPEN_AI_ASSISTANT_ID' then restart.`
+      );
+    }
+    console.log(`DiscordAI: Updating assistant ${process.env.OPEN_AI_ASSISTANT_ID}`);
+    await this.updateAssistant(process.env.OPEN_AI_ASSISTANT_ID!);
+    console.log(`DiscordAI: Updated assistant ${process.env.OPEN_AI_ASSISTANT_ID}`);
   }
 
   async handleConversation(messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[], message: Message) {
@@ -93,6 +103,70 @@ export class DiscordAI {
     });
   }
 
+  public async handleAssistantConversation(message: Message, query: string) {
+    const tools = this.getAvailableTools(message.member!);
+
+    const toolManager = new ToolManager(
+      message.member!,
+      message.client,
+      message.channel as GuildTextBasedChannel,
+      // Even tho the tool manager has access to all tools, the AI only sees the available tools according to the member's permission
+      this.toolMapping
+    );
+
+    const thread = await this.openai.beta.threads.create();
+    await this.openai.beta.threads.messages.create(thread.id, {
+      role: 'user',
+      content: query,
+    });
+
+    let run = await this.openai.beta.threads.runs.createAndPoll(thread.id, {
+      assistant_id: process.env.OPEN_AI_ASSISTANT_ID!,
+      parallel_tool_calls: true,
+      // tools: tools.map(t => ({ function: t.definition.function, type: t.definition.type })),
+    });
+
+    while (run.status === 'requires_action') {
+      console.log('AI requiring action');
+
+      if (run.required_action?.submit_tool_outputs) {
+        const toolResponses: OpenAI.Beta.Threads.Runs.RunSubmitToolOutputsParams.ToolOutput[] = [];
+        for (const tool of run.required_action?.submit_tool_outputs.tool_calls) {
+          console.log('Tool use', tool.function.name);
+          const result = await toolManager.executeTool(tool.function.name, tool.function.arguments);
+          toolResponses.push({
+            output: result || 'Error: No result',
+            tool_call_id: tool.id,
+          });
+        }
+        run = await this.openai.beta.threads.runs.submitToolOutputsAndPoll(thread.id, run.id, {tool_outputs: toolResponses });
+      }
+    }
+
+    const messages = await this.openai.beta.threads.messages.list(thread.id);
+    const lastMessage = messages.data.at(0)?.content.at(0);
+    return lastMessage?.type === "text" ? lastMessage.text.value : "AI Provided no response."
+  }
+
+  private async getAssitant(assistantId: string) {
+    return this.openai.beta.assistants.retrieve(assistantId).catch(() => null);
+  }
+
+  private async updateAssistant(assistantId: string) {
+    return this.openai.beta.assistants.update(assistantId, {
+      tools: this.tools.map(t => ({ function: t.definition.function, type: t.definition.type })),
+    });
+  }
+
+  private async createAssistant() {
+    return this.openai.beta.assistants.create({
+      name: 'DiscordAI-v0.0.1',
+      model: 'gpt-4-turbo',
+      instructions: process.env.SYSTEM_PROMPT!,
+      tools: this.tools.map(t => ({ function: t.definition.function, type: t.definition.type })),
+    });
+  }
+
   private getAvailableTools(member: GuildMember) {
     const availableTools: ToolFile[] = [];
     for (const tool of this.tools) {
@@ -120,5 +194,3 @@ async function getTsFiles(dir: string, fileList: string[] = []): Promise<string[
 
   return fileList;
 }
-
-function createToolMapping(member: GuildMember, tools: ToolFile[]) {}
