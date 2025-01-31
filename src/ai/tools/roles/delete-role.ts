@@ -4,8 +4,8 @@ import OpenAI from 'openai';
 
 const deleteRole: ToolFunction<{ roleId: string }> = async ({ guild, roleId }) => {
   if (!/\d{17,20}/.test(roleId)) return { data: `The role ${roleId} is not a valid role ID` };
-  const deleted = await guild.roles.delete(roleId).catch(() => null);
-  if (deleted) return { data: `${roleId} was deleted` };
+  const deleted = await guild.roles.delete(roleId).then(() => true).catch((err) => console.log(err));
+  if (deleted) return { data: `${roleId} was deleted, do not try to add, remove, or modify it` };
   else return { error: `Failed to delete ${roleId}` };
 };
 

@@ -12,7 +12,7 @@ const createRole: ToolFunction<{
   const role = await guild.roles.create({ name: roleName, color: roleColor }).catch(err => console.log(err));
   return role
     ? {
-        data: `Created a role called ${role.name} with the color ${role.color}`,
+        data: `Created a role called ${role.name} with the color ${role.color} and ID ${role.id}`,
       }
     : { error: 'Failed to create the role' };
 };
@@ -34,7 +34,7 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
         },
         roleColor: {
           type: ['number', 'null'],
-          description: 'Hex or Decimal color',
+          description: 'Hex color code',
         },
       },
     },
