@@ -24,8 +24,7 @@ export class ToolManager {
       };
       const result = await func(json);
       console.log('Tool result:', result);
-      if (result.error) return `Error: ${result.error}`;
-      return result.data;
+      return `${result.error ? `Error: ${result.error}\n` : ''}${result.data ? `Result: ${result.data}` : ''}`;
     } catch (ex) {
       console.error(ex);
       return `Failed to execute tool ${functionName} with args ${args}`;
