@@ -51,6 +51,7 @@ client.on(Events.MessageCreate, async message => {
       waitingMessage.edit(`Got an error: ${errMessage}\n\n${execString(startTime)}`);
     }
   } else if (split[0] === '+assist') {
+    if (message.author.id !== "311808747141857292") return message.reply("You are not allowed to use this (It's expensive)")
     if (!split[1]) return message.reply('You need to tell me what to do');
 
     const query = split.splice(1).join(' ');

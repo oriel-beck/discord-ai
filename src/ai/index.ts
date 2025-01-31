@@ -41,15 +41,15 @@ export class DiscordAI {
     }
     console.log(`DiscordAI: Loaded ${this.tools.length} tools`);
 
-    if (!process.env.OPEN_AI_ASSISTANT_ID || !(await this.getAssitant(process.env.OPEN_AI_ASSISTANT_ID!))) {
-      const newAssistant = await this.createAssistant();
-      throw new Error(
-        `DiscordAI: Failed to start DiscordAI. Could not find a assistant.\nI created an assistant for you, please set '${newAssistant.id}' as the env value of 'OPEN_AI_ASSISTANT_ID' then restart.`
-      );
-    }
-    console.log(`DiscordAI: Updating assistant ${process.env.OPEN_AI_ASSISTANT_ID}`);
-    await this.updateAssistant(process.env.OPEN_AI_ASSISTANT_ID!);
-    console.log(`DiscordAI: Updated assistant ${process.env.OPEN_AI_ASSISTANT_ID}`);
+    // if (!process.env.OPEN_AI_ASSISTANT_ID || !(await this.getAssitant(process.env.OPEN_AI_ASSISTANT_ID!))) {
+    //   const newAssistant = await this.createAssistant();
+    //   throw new Error(
+    //     `DiscordAI: Failed to start DiscordAI. Could not find a assistant.\nI created an assistant for you, please set '${newAssistant.id}' as the env value of 'OPEN_AI_ASSISTANT_ID' then restart.`
+    //   );
+    // }
+    // console.log(`DiscordAI: Updating assistant ${process.env.OPEN_AI_ASSISTANT_ID}`);
+    // await this.updateAssistant(process.env.OPEN_AI_ASSISTANT_ID!);
+    // console.log(`DiscordAI: Updated assistant ${process.env.OPEN_AI_ASSISTANT_ID}`);
   }
 
   async handleConversation(messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[], message: Message) {
