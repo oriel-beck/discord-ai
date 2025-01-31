@@ -40,7 +40,7 @@ const removeRoles: ToolFunction<{
     (await guild.members.fetch(userId).catch(() => null));
   if (!member) return { error: `Failed to find the member ${userId}` };
 
-  const add = await member.roles.remove(useableIds).catch((err) => console.log(err));;
+  const add = await member.roles.remove(useableIds).catch((err) => console.log(err));
   if (!add)
     return {
       error: `Failed to remove the roles ${useableIds.join(
