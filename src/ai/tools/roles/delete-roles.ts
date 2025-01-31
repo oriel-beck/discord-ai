@@ -6,11 +6,11 @@ const deleteRoles: ToolFunction<{
   roleIds: string[];
 }> = async ({ guild, roleIds }) => {
   if (!Array.isArray(roleIds) || roleIds.length === 0) {
-    return { error: 'No roles provided for creation' };
+    return { error: 'No roles provided for deletion' };
   }
 
-  const deletedRoles = [];
-  const errors = [];
+  const deletedRoles: string[] = [];
+  const errors: string[] = [];
 
   for (const roleId of roleIds) {
     if (!/\d{17,20}/.test(roleId)) {
@@ -18,7 +18,7 @@ const deleteRoles: ToolFunction<{
       continue;
     }
     try {
-      const role = await guild.roles.delete(roleId);
+      await guild.roles.delete(roleId);
       deletedRoles.push(`Deleted the role ${roleId}`);
     } catch (err) {
       errors.push(`Failed to delete the role ${roleId}: ${(err as Error).message}`);

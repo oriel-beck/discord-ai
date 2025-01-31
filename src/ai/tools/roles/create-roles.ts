@@ -9,12 +9,12 @@ const createRoles: ToolFunction<{
     return { error: 'No roles provided for creation' };
   }
 
-  const createdRoles = [];
-  const errors = [];
+  const createdRoles: string[] = [];
+  const errors: string[] = [];
 
   for (const { roleName, roleColor } of roles) {
     if (roleName.length > 100) {
-      errors.push({ roleName, error: `${roleName} cannot be longer than 100 characters` });
+      errors.push(`${roleName} cannot be longer than 100 characters`);
       continue;
     }
 
