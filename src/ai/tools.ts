@@ -1,5 +1,6 @@
 import { Client, GuildMember, GuildTextBasedChannel } from 'discord.js';
 import { ToolFunction } from './types.js';
+import { sendAudit } from './util.js';
 
 export class ToolManager {
   constructor(
@@ -24,7 +25,10 @@ export class ToolManager {
       };
       const result = await func(json);
       console.log('Tool result:', result);
-      return `${result.error ? `Error: ${result.error}\n` : ''}${result.data ? `Result: ${result.data}` : ''}`;
+      const auditLog = this.channel.guild.channels.cache.get('1335364653966037056');
+      const resultString = `${result.error ? `Error: ${result.error}\n` : ''}${result.data ? `Result: ${result.data}` : ''}`;
+      await sendAudit(auditLog as GuildTextBasedChannel, functionName, this.member.id, `## Input: \n${args}\n## Output:\n${resultString}`, 'info');
+      return resultString
     } catch (ex) {
       console.error(ex);
       return `Failed to execute tool ${functionName} with args ${args}`;
