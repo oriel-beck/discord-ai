@@ -6,14 +6,12 @@ import { join } from 'path';
 import { ToolFunction } from './types.js';
 import { GuildMember, GuildTextBasedChannel, Message, PermissionsString } from 'discord.js';
 
-const MODEL = 'gpt-4o-mini';
-
+const MODEL: OpenAI.Chat.ChatModel = 'gpt-4o-mini';
 interface ToolFile {
   default: ToolFunction;
   definition: OpenAI.Chat.Completions.ChatCompletionTool;
   permission?: PermissionsString;
 }
-
 export class DiscordAI {
   openai!: OpenAI;
   constructor(
@@ -123,7 +121,7 @@ export class DiscordAI {
     let run = await this.openai.beta.threads.runs.createAndPoll(thread.id, {
       assistant_id: process.env.OPEN_AI_ASSISTANT_ID!,
       parallel_tool_calls: true,
-      // tools: tools.map(t => ({ function: t.definition.function, type: t.definition.type })),
+      tools: tools.map(t => ({ function: t.definition.function, type: t.definition.type })),
     });
 
     while (run.status === 'requires_action') {
@@ -139,13 +137,13 @@ export class DiscordAI {
             tool_call_id: tool.id,
           });
         }
-        run = await this.openai.beta.threads.runs.submitToolOutputsAndPoll(thread.id, run.id, {tool_outputs: toolResponses });
+        run = await this.openai.beta.threads.runs.submitToolOutputsAndPoll(thread.id, run.id, { tool_outputs: toolResponses });
       }
     }
 
     const messages = await this.openai.beta.threads.messages.list(thread.id);
     const lastMessage = messages.data.at(0)?.content.at(0);
-    return lastMessage?.type === "text" ? lastMessage.text.value : "AI Provided no response."
+    return lastMessage?.type === 'text' ? lastMessage.text.value : 'AI Provided no response.';
   }
 
   private async getAssitant(assistantId: string) {
