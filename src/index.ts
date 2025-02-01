@@ -31,7 +31,7 @@ client.on(Events.MessageCreate, async message => {
     console.log('Incoming message:', query);
     const messages = initMessages(
       query,
-      `You were executed in the server ${message.guildId}\nChannel: ${message.channelId}\nExecutor user ID: ${message.author.id}\nYour role position is: ${message.guild?.members.me?.roles.highest.position}`
+      `You were executed in the server ${message.guildId}\nChannel: ${message.channelId}\nExecutor user ID (aka me): ${message.author.id}\nExecutor name (aka me): ${message.author.username}\nYour role position is: ${message.guild?.members.me?.roles.highest.position}`
     );
 
     const startTime = new Date().getTime();

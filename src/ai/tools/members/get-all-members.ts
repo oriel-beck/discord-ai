@@ -40,7 +40,8 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
   type: 'function',
   function: {
     name: 'get_all_discord_members',
-    description: 'Get all members/users in the Discord server',
+    description:
+      'Get all members/users in the Discord server, only used when you need to get all members, for getting specific members by usernames use `get_discord_member_by_username`',
   },
 };
 
