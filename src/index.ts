@@ -1,5 +1,5 @@
 import { config } from 'dotenv';
-import { Client, Events, GatewayIntentBits, GuildTextBasedChannel } from 'discord.js';
+import { ChannelType, Client, Events, GatewayIntentBits, GuildTextBasedChannel } from 'discord.js';
 import { initMessages } from './ai/init.js';
 import { join } from 'path';
 import { DiscordAI } from './ai/index.js';
@@ -31,7 +31,7 @@ client.on(Events.MessageCreate, async message => {
     console.log('Incoming message:', query);
     const messages = initMessages(
       query,
-      `You were executed in the server ${message.guildId}\nChannel: ${message.channelId}\nExecutor user ID (aka me): ${message.author.id}\nExecutor name (aka me): ${message.author.username}\nYour role position is: ${message.guild?.members.me?.roles.highest.position}`
+      `You were executed in the server ${message.guildId}\nChannel: ${message.channelId}\nExecutor user ID (aka me): ${message.author.id}\nExecutor name (aka me): ${message.author.username}`
     );
 
     const startTime = new Date().getTime();
@@ -50,28 +50,58 @@ client.on(Events.MessageCreate, async message => {
       const errMessage = (err as Error).message;
       waitingMessage.edit(`Got an error: ${errMessage}\n\n${execString(startTime)}`);
     }
-  } else if (split[0] === '+assist') {
-    if (message.author.id !== "311808747141857292") return message.reply("You are not allowed to use this (It's expensive)")
-    if (!split[1]) return message.reply('You need to tell me what to do');
+  } else if (split[0] === '+thread') {
+    if (
+      message.channel.type === ChannelType.DM ||
+      message.channel.type === ChannelType.GuildStageVoice ||
+      message.channel.isThread() ||
+      message.channel.type === ChannelType.GuildVoice
+    )
+      return;
+    const thread = await message.channel.threads.create({
+      startMessage: message,
+      name: 'Assistant',
+    });
 
-    const query = split.splice(1).join(' ');
+    const collector = thread.createMessageCollector({
+      filter: m => m.author.id === message.author.id,
+      // 1h
+      time: 60 * 60 * 1000,
+      // 5m
+      idle: 5 * 60 * 1000,
+    });
 
-    const startTime = new Date().getTime();
-    const waitingMessage = await message.reply('Executing for 0s');
-    const interval = setInterval(() => {
-      waitingMessage.edit(`Executing for ${((new Date().getTime() - startTime) / 1000).toFixed(2)}s`);
-    }, 3000);
+    const assistantThread = await discordAi.createAssistantThread();
+    collector.on('collect', async m => {
+      // if (m.author.id !== "311808747141857292") return m.reply("You are not allowed to use this (It's expensive)")
+      if (!m.content) return m.reply('You need to tell me what to do');
 
-    try {
-      const res = await discordAi.handleAssistantConversation(message, `You were executed in the server ${message.guildId}\nChannel: ${message.channelId}\nExecutor user ID: ${message.author.id}\nYour role position is: ${message.guild?.members.me?.roles.highest.position}\n\nQuery: ${query}`);
-      clearInterval(interval);
-      if (res) waitingMessage.edit(`${res}\n\n${execString(startTime)}`);
-      else waitingMessage.edit(`AI provided no response\n\n${execString(startTime)}`);
-    } catch (err) {
-      clearInterval(interval);
-      const errMessage = (err as Error).message;
-      waitingMessage.edit(`Got an error: ${errMessage}\n\n${execString(startTime)}`);
-    }
+      const startTime = new Date().getTime();
+      const waitingMessage = await m.reply('Executing for 0s');
+      const interval = setInterval(() => {
+        waitingMessage.edit(`Executing for ${((new Date().getTime() - startTime) / 1000).toFixed(2)}s`);
+      }, 3000);
+
+      try {
+        const res = await discordAi.handleAssistantConversation(
+          m,
+          assistantThread.id,
+          `You were executed in the server ${m.guildId}\nChannel: ${m.channelId}\nExecutor user ID (aka me): ${m.author.id}\nExecutor name (aka me): ${m.author.username}\n\nQuery: ${m.content}`
+        );
+        clearInterval(interval);
+        if (res) waitingMessage.edit(`${res}\n\n${execString(startTime)}`);
+        else waitingMessage.edit(`AI provided no response\n\n${execString(startTime)}`);
+      } catch (err) {
+        clearInterval(interval);
+        const errMessage = (err as Error).message;
+        waitingMessage.edit(`Got an error: ${errMessage}\n\n${execString(startTime)}`).catch(() => null);
+      }
+    });
+    collector.on('end', () => {
+      thread.send('Ended thread, archiving and locking...');
+      thread.setArchived(true);
+      thread.setLocked(true);
+    });
   }
 });
 

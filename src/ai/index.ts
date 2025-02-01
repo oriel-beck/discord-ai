@@ -39,15 +39,15 @@ export class DiscordAI {
     }
     console.log(`DiscordAI: Loaded ${this.tools.length} tools`);
 
-    // if (!process.env.OPEN_AI_ASSISTANT_ID || !(await this.getAssitant(process.env.OPEN_AI_ASSISTANT_ID!))) {
-    //   const newAssistant = await this.createAssistant();
-    //   throw new Error(
-    //     `DiscordAI: Failed to start DiscordAI. Could not find a assistant.\nI created an assistant for you, please set '${newAssistant.id}' as the env value of 'OPEN_AI_ASSISTANT_ID' then restart.`
-    //   );
-    // }
-    // console.log(`DiscordAI: Updating assistant ${process.env.OPEN_AI_ASSISTANT_ID}`);
-    // await this.updateAssistant(process.env.OPEN_AI_ASSISTANT_ID!);
-    // console.log(`DiscordAI: Updated assistant ${process.env.OPEN_AI_ASSISTANT_ID}`);
+    if (!process.env.OPEN_AI_ASSISTANT_ID || !(await this.getAssitant(process.env.OPEN_AI_ASSISTANT_ID!))) {
+      const newAssistant = await this.createAssistant();
+      throw new Error(
+        `DiscordAI: Failed to start DiscordAI. Could not find a assistant.\nI created an assistant for you, please set '${newAssistant.id}' as the env value of 'OPEN_AI_ASSISTANT_ID' then restart.`
+      );
+    }
+    console.log(`DiscordAI: Updating assistant ${process.env.OPEN_AI_ASSISTANT_ID}`);
+    await this.updateAssistant(process.env.OPEN_AI_ASSISTANT_ID!);
+    console.log(`DiscordAI: Updated assistant ${process.env.OPEN_AI_ASSISTANT_ID}`);
   }
 
   async handleConversation(messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[], message: Message) {
@@ -101,9 +101,13 @@ export class DiscordAI {
     });
   }
 
-  public async handleAssistantConversation(message: Message, query: string) {
-    const tools = this.getAvailableTools(message.member!);
+  public async createAssistantThread() {
+    return await this.openai.beta.threads.create();
+  }
 
+  public async handleAssistantConversation(message: Message, threadId: string, query: string) {
+    const tools = this.getAvailableTools(message.member!);
+    
     const toolManager = new ToolManager(
       message.member!,
       message.client,
@@ -112,13 +116,12 @@ export class DiscordAI {
       this.toolMapping
     );
 
-    const thread = await this.openai.beta.threads.create();
-    await this.openai.beta.threads.messages.create(thread.id, {
+    await this.openai.beta.threads.messages.create(threadId, {
       role: 'user',
       content: query,
     });
 
-    let run = await this.openai.beta.threads.runs.createAndPoll(thread.id, {
+    let run = await this.openai.beta.threads.runs.createAndPoll(threadId, {
       assistant_id: process.env.OPEN_AI_ASSISTANT_ID!,
       parallel_tool_calls: true,
       tools: tools.map(t => ({ function: t.definition.function, type: t.definition.type })),
@@ -137,11 +140,11 @@ export class DiscordAI {
             tool_call_id: tool.id,
           });
         }
-        run = await this.openai.beta.threads.runs.submitToolOutputsAndPoll(thread.id, run.id, { tool_outputs: toolResponses });
+        run = await this.openai.beta.threads.runs.submitToolOutputsAndPoll(threadId, run.id, { tool_outputs: toolResponses });
       }
     }
 
-    const messages = await this.openai.beta.threads.messages.list(thread.id);
+    const messages = await this.openai.beta.threads.messages.list(threadId);
     const lastMessage = messages.data.at(0)?.content.at(0);
     return lastMessage?.type === 'text' ? lastMessage.text.value : 'AI Provided no response.';
   }
