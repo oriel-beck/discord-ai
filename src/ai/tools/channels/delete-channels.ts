@@ -3,9 +3,9 @@ import OpenAI from 'openai';
 import { ToolFunction } from '../../types.js';
 
 const deleteChannels: ToolFunction<{
-  channels: string[];
-}> = async ({ guild, channels }) => {
-  if (!channels.length)
+  channelIds: string[];
+}> = async ({ guild, channelIds }) => {
+  if (!channelIds.length)
     return {
       error: 'No channels were provided to create',
     };
@@ -13,7 +13,7 @@ const deleteChannels: ToolFunction<{
   const createdChannels = [];
   const errors = [];
 
-  for (const channelId of channels) {
+  for (const channelId of channelIds) {
     try {
       await guild.channels.delete(channelId);
       createdChannels.push(`Deleted the channel ${channelId}`);
