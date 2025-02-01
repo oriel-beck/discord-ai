@@ -89,8 +89,8 @@ client.on(Events.MessageCreate, async message => {
           `You were executed in the server ${m.guildId}\nChannel: ${m.channelId}\nExecutor user ID (aka me): ${m.author.id}\nExecutor name (aka me): ${m.author.username}\n\nQuery: ${m.content}`
         );
         clearInterval(interval);
-        if (res) waitingMessage.edit(`${res}\n\n${execString(startTime)}`);
-        else waitingMessage.edit(`AI provided no response\n\n${execString(startTime)}`);
+        if (res) waitingMessage.edit(`${res}\n\n${execString(startTime)}`).catch(() => null);
+        else waitingMessage.edit(`AI provided no response\n\n${execString(startTime)}`).catch(() => null);
       } catch (err) {
         clearInterval(interval);
         const errMessage = (err as Error).message;
