@@ -1,9 +1,10 @@
 import OpenAI from 'openai';
 import { ToolFunction } from '../../types.js';
-import { ColorResolvable, PermissionsString } from 'discord.js';
+import { ColorResolvable, PermissionResolvable, PermissionsString } from 'discord.js';
+import { PermissionsEnum } from '../../constants.js';
 
 const createRoles: ToolFunction<{
-  roles: { roleName: string; roleColor: ColorResolvable }[];
+  roles: { roleName: string; roleColor: ColorResolvable; rolePermissions: PermissionResolvable }[];
 }> = async ({ guild, roles }) => {
   if (!Array.isArray(roles) || roles.length === 0) {
     return { error: 'No roles provided for creation' };
@@ -12,14 +13,14 @@ const createRoles: ToolFunction<{
   const createdRoles: string[] = [];
   const errors: string[] = [];
 
-  for (const { roleName, roleColor } of roles) {
+  for (const { roleName, roleColor, rolePermissions } of roles) {
     if (roleName.length > 100) {
       errors.push(`${roleName} cannot be longer than 100 characters`);
       continue;
     }
 
     try {
-      const role = await guild.roles.create({ name: roleName, color: roleColor });
+      const role = await guild.roles.create({ name: roleName, color: roleColor, permissions: rolePermissions });
       createdRoles.push(`Created a role called ${role.name} with the color ${role.color} and ID ${role.id}`);
     } catch (err) {
       errors.push(`Failed to create role ${roleName}: ${(err as Error).message}`);
@@ -49,7 +50,7 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
           items: {
             additionalProperties: false,
             type: 'object',
-            required: ['roleName', 'roleColor'],
+            required: ['roleName', 'roleColor', 'rolePermissions'],
             properties: {
               roleName: {
                 type: 'string',
@@ -58,6 +59,13 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
               roleColor: {
                 type: ['string', 'null'],
                 description: 'Hex color code',
+              },
+              rolePermissions: {
+                type: 'array',
+                items: {
+                  type: 'string',
+                  enum: PermissionsEnum,
+                },
               },
             },
           },

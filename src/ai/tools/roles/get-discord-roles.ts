@@ -6,7 +6,7 @@ const getAllRoles: ToolFunction = async ({ guild }) => {
   if (!guild.members.me) await guild.members.fetchMe();
   // Don't return roles the bot can't manage
   const roles = guild.roles.cache
-    .filter(r => !r.managed && r.position < guild.members.me!.roles.highest.position && r.name !== '@everyone')
+    .filter(r => !r.managed && r.position < guild.members.me!.roles.highest.position)
     .map(r => `Position ${r.position}: ${r.name} - ${r.id}`)
     .join('\n');
   if (!roles) return { error: `Failed to get role list` };
