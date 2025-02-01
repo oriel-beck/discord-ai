@@ -1,6 +1,6 @@
+import { PermissionsString } from 'discord.js';
 import OpenAI from 'openai';
 import { ToolFunction } from '../../types.js';
-import { GuildChannelTypes, PermissionsString } from 'discord.js';
 
 const deleteChannels: ToolFunction<{
   channels: string[];
@@ -15,7 +15,7 @@ const deleteChannels: ToolFunction<{
 
   for (const channelId of channels) {
     try {
-      const deleted = await guild.channels.delete(channelId) 
+      await guild.channels.delete(channelId);
       createdChannels.push(`Deleted the channel ${channelId}`);
     } catch (err) {
       errors.push(`Failed to delete channel ${channelId}: ${(err as Error).message}`);
@@ -25,7 +25,7 @@ const deleteChannels: ToolFunction<{
   return {
     data: createdChannels.length ? createdChannels.join('\n') : undefined,
     error: errors.length ? errors.join('\n') : undefined,
-  }
+  };
 };
 
 export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {

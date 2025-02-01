@@ -1,11 +1,11 @@
+import { ChannelType, GuildChannelTypes, PermissionsString } from 'discord.js';
 import OpenAI from 'openai';
 import { ToolFunction } from '../../types.js';
-import { GuildChannelTypes, PermissionsString } from 'discord.js';
 
 const createChannels: ToolFunction<{
   channels: {
     channelName: string;
-    channelType: GuildChannelTypes;
+    channelType: keyof typeof ChannelType;
     //   TODO: permissions?
   }[];
 }> = async ({ guild, channels }) => {
@@ -21,7 +21,7 @@ const createChannels: ToolFunction<{
     try {
       const created = await guild.channels.create({
         name: channelName,
-        type: channelType,
+        type: ChannelType[channelType] as GuildChannelTypes,
       });
       createdChannels.push(`Created the channel ${channelName} of type ${channelType} as ${created.name}`);
     } catch (err) {
