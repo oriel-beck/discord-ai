@@ -27,9 +27,9 @@ const createRoles: ToolFunction<{
 
     try {
       const role = await guild.roles.edit(roleId, {
-        name: roleName,
-        color: roleColor,
-        permissions: rolePermissions
+        name: roleName || undefined,
+        color: roleColor || undefined,
+        permissions: rolePermissions || undefined
       });
       editedRoles.push(`Edited the role ${role.id} to: name - ${role.name}, color: ${role.color}, permissions - ${role.permissions.toArray().join(", ")}. `);
     } catch (err) {
@@ -64,15 +64,15 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
             properties: {
               roleName: {
                 type: ['string', 'null'],
-                description: 'The new name for the role, max 100 characters',
+                description: 'The new name for the role, max 100 characters. null when not requested to change.',
               },
               roleColor: {
                 type: ['string', 'null'],
-                description: 'Hex color code',
+                description: 'Hex color code. null when not requested to change',
               },
               rolePermissions: {
                 type: ['array', 'null'],
-                description: 'The permissions to apply to the role',
+                description: 'The permissions to apply to the role. null when not requested to change',
                 items: {
                   type: 'string',
                   enum: PermissionsEnum,
