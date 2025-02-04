@@ -4,31 +4,41 @@ import { ColorResolvable, PermissionResolvable, PermissionsString } from 'discor
 import { PermissionsEnum } from '../../constants.js';
 
 const createRoles: ToolFunction<{
-  roles: { roleName: string; roleColor: ColorResolvable; rolePermissions: PermissionResolvable }[];
+  roles: { roleName?: string; roleColor?: ColorResolvable; rolePermissions?: PermissionResolvable; roleId: string }[];
 }> = async ({ guild, roles }) => {
   if (!Array.isArray(roles) || roles.length === 0) {
     return { error: 'No roles provided for creation' };
   }
 
-  const createdRoles: string[] = [];
+  const editedRoles: string[] = [];
   const errors: string[] = [];
 
-  for (const { roleName, roleColor, rolePermissions } of roles) {
-    if (roleName.length > 100) {
+  for (const { roleName, roleColor, rolePermissions, roleId } of roles) {
+    if (roleName && roleName.length > 100) {
       errors.push(`${roleName} cannot be longer than 100 characters`);
       continue;
     }
 
+    const role = guild.roles.cache.get(roleId);
+    if (!role) {
+        errors.push(`Cannot find the role ${roleId}`);
+        continue;
+    }
+
     try {
-      const role = await guild.roles.create({ name: roleName, color: roleColor, permissions: rolePermissions });
-      createdRoles.push(`Created a role called ${role.name} with the color ${role.color} and ID ${role.id}`);
+      const role = await guild.roles.edit(roleId, {
+        name: roleName,
+        color: roleColor,
+        permissions: rolePermissions
+      });
+      editedRoles.push(`Edited the role ${role.id} to: name - ${role.name}, color: ${role.color}, permissions - ${role.permissions.toArray().join(", ")}. `);
     } catch (err) {
-      errors.push(`Failed to create role ${roleName}: ${(err as Error).message}`);
+      errors.push(`Failed to edit role ${roleId}: ${(err as Error).message}`);
     }
   }
 
   return {
-    data: createdRoles.length ? createdRoles.join('\n') : undefined,
+    data: editedRoles.length ? editedRoles.join('\n') : undefined,
     error: errors.length ? errors.join('\n') : undefined,
   };
 };
@@ -36,8 +46,8 @@ const createRoles: ToolFunction<{
 export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
   type: 'function',
   function: {
-    name: 'create_roles',
-    description: 'Creates multiple Discord roles',
+    name: 'edit_roles',
+    description: 'Edits multiple Discord roles',
     strict: true,
     parameters: {
       type: 'object',
@@ -46,27 +56,31 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
       properties: {
         roles: {
           type: 'array',
-          description: 'An array of roles to create',
+          description: 'An array of roles to edit',
           items: {
             additionalProperties: false,
             type: 'object',
-            required: ['roleName', 'roleColor', 'rolePermissions'],
+            required: ['roleName', 'roleColor', 'rolePermissions', 'roleId'],
             properties: {
               roleName: {
-                type: 'string',
-                description: 'The name for the role, max 100 characters',
+                type: ['string', 'null'],
+                description: 'The new name for the role, max 100 characters',
               },
               roleColor: {
                 type: ['string', 'null'],
                 description: 'Hex color code',
               },
               rolePermissions: {
-                type: 'array',
-                description: "The permissions to apply to the role",
+                type: ['array', 'null'],
+                description: 'The permissions to apply to the role',
                 items: {
                   type: 'string',
                   enum: PermissionsEnum,
                 },
+              },
+              roleId: {
+                type: 'string',
+                description: 'The role Id',
               },
             },
           },
