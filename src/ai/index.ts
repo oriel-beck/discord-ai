@@ -46,6 +46,7 @@ export class DiscordAI {
     console.log(`DiscordAI: Loaded ${this.tools.length} tools`);
   }
 
+  // Saves the history of the conversation in that thread
   async handleConversationInThreads(message: Message, query: string, appendToSystemPrompt?: string) {
     let messages = initMessages(query, appendToSystemPrompt);
     const threadHistory = this.messagesHistory.get(message.channelId);
@@ -56,13 +57,13 @@ export class DiscordAI {
         content: query,
       });
     }
-    console.log(messages);
     messages = await this.handleConversation(message, messages);
     this.messagesHistory.set(message.channelId, messages);
     return messages.at(-1)?.content;
   }
 
-  async handleConversationInChannels(message: Message, query: string, appendToSystemPrompt?: string) {
+  // If you reply to the bot's message it will append the history of that response to your message
+  async handleConversationInChannels(message: Message, query: string, messageId: string, appendToSystemPrompt?: string) {
     let messages = initMessages(query, appendToSystemPrompt);
     if (message.reference?.messageId) {
       const replyHistory = this.messagesHistory.get(message.reference.messageId);
@@ -74,9 +75,8 @@ export class DiscordAI {
         });
       }
     }
-    console.log(messages);
     messages = await this.handleConversation(message, messages);
-    this.messagesHistory.set(message.id, messages);
+    this.messagesHistory.set(messageId, messages);
     return messages.at(-1)?.content;
   }
 

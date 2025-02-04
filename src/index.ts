@@ -1,6 +1,5 @@
+import { ChannelType, Client, Events, GatewayIntentBits, Message } from 'discord.js';
 import { config } from 'dotenv';
-import { ChannelType, Client, Events, GatewayIntentBits, GuildTextBasedChannel } from 'discord.js';
-import { initMessages } from './ai/init.js';
 import { join } from 'path';
 import { DiscordAI } from './ai/index.js';
 
@@ -24,32 +23,15 @@ client.on(Events.MessageCreate, async message => {
 
   const split = message.content.split(' ');
 
-  if (split[0] === '+chat') {
+  if (message.reference?.messageId && discordAi.messagesHistory.get(message.reference.messageId)) {
+    await chat(message, message.content, 'message');
+  } else if (split[0] === '+chat') {
     if (!split[1]) return message.reply('You need to tell me what to do');
 
     const query = split.splice(1).join(' ');
     console.log('Incoming message:', query);
 
-    const startTime = new Date().getTime();
-    const waitingMessage = await message.reply('Executing for 0s');
-    const interval = setInterval(() => {
-      waitingMessage.edit(`Executing for ${((new Date().getTime() - startTime) / 1000).toFixed(2)}s`);
-    }, 3000);
-
-    try {
-      const res = await discordAi.handleConversationInChannels(
-        message,
-        query,
-        `You were executed in the server ${message.guildId}\nChannel: ${message.channelId}\nExecutor user ID (aka me): ${message.author.id}\nExecutor name (aka me): ${message.author.username}`
-      );
-      clearInterval(interval);
-      if (res) waitingMessage.edit(`${res}\n\n${execString(startTime)}`);
-      else waitingMessage.edit(`AI provided no response\n\n${execString(startTime)}`);
-    } catch (err) {
-      clearInterval(interval);
-      const errMessage = (err as Error).message;
-      waitingMessage.edit(`Got an error: ${errMessage}\n\n${execString(startTime)}`);
-    }
+    await chat(message, query, 'message');
   } else if (split[0] === '+thread') {
     if (
       message.channel.type === ChannelType.DM ||
@@ -73,31 +55,10 @@ client.on(Events.MessageCreate, async message => {
 
     thread.send('Send messages in this channel to have a conversation with Discord AI');
 
-    // const assistantThread = await discordAi.createAssistantThread();
     collector.on('collect', async m => {
-      // if (m.author.id !== "311808747141857292") return m.reply("You are not allowed to use this (It's expensive)")
       if (!m.content) return m.reply('You need to tell me what to do');
 
-      const startTime = new Date().getTime();
-      const waitingMessage = await m.reply('Executing for 0s');
-      const interval = setInterval(() => {
-        waitingMessage.edit(`Executing for ${((new Date().getTime() - startTime) / 1000).toFixed(2)}s`);
-      }, 3000);
-
-      try {
-        const res = await discordAi.handleConversationInThreads(
-          message,
-          m.content,
-          `You were executed in the server ${message.guildId}\nChannel: ${message.channelId}\nExecutor user ID (aka me): ${message.author.id}\nExecutor name (aka me): ${message.author.username}`
-        );
-        clearInterval(interval);
-        if (res) waitingMessage.edit(`${res}\n\n${execString(startTime)}`).catch(() => null);
-        else waitingMessage.edit(`AI provided no response\n\n${execString(startTime)}`).catch(() => null);
-      } catch (err) {
-        clearInterval(interval);
-        const errMessage = (err as Error).message;
-        waitingMessage.edit(`Got an error: ${errMessage}\n\n${execString(startTime)}`).catch(() => null);
-      }
+      await chat(m, m.content, 'thread');
     });
     collector.on('end', () => {
       thread.send('Ended thread, archiving and locking...').catch(() => null);
@@ -110,3 +71,34 @@ client.on(Events.MessageCreate, async message => {
 client.login(process.env.BOT_TOKEN);
 
 const execString = (startTime: number) => `Execution took ${((new Date().getTime() - startTime) / 1000).toFixed(2)}s`;
+
+async function chat(message: Message, query: string, type: 'thread' | 'message') {
+  const startTime = new Date().getTime();
+  const waitingMessage = await message.reply('Executing for 0s');
+  const interval = setInterval(() => {
+    waitingMessage.edit(`Executing for ${((new Date().getTime() - startTime) / 1000).toFixed(2)}s`);
+  }, 3000);
+
+  try {
+    const res =
+      type === 'message'
+        ? await discordAi.handleConversationInChannels(
+            message,
+            query,
+            waitingMessage.id,
+            `You were executed in the server ${message.guildId}\nChannel: ${message.channelId}\nExecutor user ID (aka me): ${message.author.id}\nExecutor name (aka me): ${message.author.username}`
+          )
+        : await discordAi.handleConversationInThreads(
+            message,
+            query,
+            `You were executed in the server ${message.guildId}\nChannel: ${message.channelId}\nExecutor user ID (aka me): ${message.author.id}\nExecutor name (aka me): ${message.author.username}`
+          );
+    clearInterval(interval);
+    if (res) waitingMessage.edit(`${res}\n\n${execString(startTime)}`).catch(() => null);
+    else waitingMessage.edit(`AI provided no response\n\n${execString(startTime)}`).catch(() => null);
+  } catch (err) {
+    clearInterval(interval);
+    const errMessage = (err as Error).message;
+    waitingMessage.edit(`Got an error: ${errMessage}\n\n${execString(startTime)}`).catch(() => null);
+  }
+}
