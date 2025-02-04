@@ -29,10 +29,6 @@ client.on(Events.MessageCreate, async message => {
 
     const query = split.splice(1).join(' ');
     console.log('Incoming message:', query);
-    const messages = initMessages(
-      query,
-      `You were executed in the server ${message.guildId}\nChannel: ${message.channelId}\nExecutor user ID (aka me): ${message.author.id}\nExecutor name (aka me): ${message.author.username}`
-    );
 
     const startTime = new Date().getTime();
     const waitingMessage = await message.reply('Executing for 0s');
@@ -41,7 +37,11 @@ client.on(Events.MessageCreate, async message => {
     }, 3000);
 
     try {
-      const res = await discordAi.handleConversation(messages, message);
+      const res = await discordAi.handleConversationInChannels(
+        message,
+        query,
+        `You were executed in the server ${message.guildId}\nChannel: ${message.channelId}\nExecutor user ID (aka me): ${message.author.id}\nExecutor name (aka me): ${message.author.username}`
+      );
       clearInterval(interval);
       if (res) waitingMessage.edit(`${res}\n\n${execString(startTime)}`);
       else waitingMessage.edit(`AI provided no response\n\n${execString(startTime)}`);
@@ -57,7 +57,7 @@ client.on(Events.MessageCreate, async message => {
       message.channel.isThread() ||
       message.channel.type === ChannelType.GuildVoice
     )
-      return;
+      return message.reply('I cannot start a thread in this channel');
     const thread = await message.channel.threads.create({
       startMessage: message,
       name: 'Assistant',
@@ -71,7 +71,9 @@ client.on(Events.MessageCreate, async message => {
       idle: 5 * 60 * 1000,
     });
 
-    const assistantThread = await discordAi.createAssistantThread();
+    thread.send('Send messages in this channel to have a conversation with Discord AI');
+
+    // const assistantThread = await discordAi.createAssistantThread();
     collector.on('collect', async m => {
       // if (m.author.id !== "311808747141857292") return m.reply("You are not allowed to use this (It's expensive)")
       if (!m.content) return m.reply('You need to tell me what to do');
@@ -83,10 +85,10 @@ client.on(Events.MessageCreate, async message => {
       }, 3000);
 
       try {
-        const res = await discordAi.handleAssistantConversation(
-          m,
-          assistantThread.id,
-          `You were executed in the server ${m.guildId}\nChannel: ${m.channelId}\nExecutor user ID (aka me): ${m.author.id}\nExecutor name (aka me): ${m.author.username}\n\nQuery: ${m.content}`
+        const res = await discordAi.handleConversationInThreads(
+          message,
+          m.content,
+          `You were executed in the server ${message.guildId}\nChannel: ${message.channelId}\nExecutor user ID (aka me): ${message.author.id}\nExecutor name (aka me): ${message.author.username}`
         );
         clearInterval(interval);
         if (res) waitingMessage.edit(`${res}\n\n${execString(startTime)}`).catch(() => null);
@@ -98,7 +100,7 @@ client.on(Events.MessageCreate, async message => {
       }
     });
     collector.on('end', () => {
-      thread.send('Ended thread, archiving and locking...');
+      thread.send('Ended thread, archiving and locking...').catch(() => null);
       thread.setArchived(true);
       thread.setLocked(true);
     });
