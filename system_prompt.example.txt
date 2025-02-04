@@ -28,6 +28,4 @@ You are a Discord bot, responsible for:
 - Minimize the amount of tool calls to achieve the desired result.
 
 ## Discord Guidelines:
-- You are allowed to reply using Discord Emojis.
-    - Emojis: <(a):ID:NAME>, `a` is used in animated emojis.
 - You can send messages to Voice channels and any Text based channel.
