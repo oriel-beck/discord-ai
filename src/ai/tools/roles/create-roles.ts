@@ -4,7 +4,7 @@ import { ColorResolvable, PermissionResolvable, PermissionsString } from 'discor
 import { PermissionsEnum } from '../../constants.js';
 
 const createRoles: ToolFunction<{
-  roles: { roleName: string; roleColor: ColorResolvable; rolePermissions: PermissionResolvable }[];
+  roles: { roleName: string; roleColor: ColorResolvable | null; rolePermissions: PermissionResolvable }[];
 }> = async ({ guild, roles }) => {
   if (!Array.isArray(roles) || roles.length === 0) {
     return { error: 'No roles provided for creation' };
@@ -20,7 +20,7 @@ const createRoles: ToolFunction<{
     }
 
     try {
-      const role = await guild.roles.create({ name: roleName, color: roleColor, permissions: rolePermissions });
+      const role = await guild.roles.create({ name: roleName, color: roleColor || undefined, permissions: rolePermissions });
       createdRoles.push(`Created a role called ${role.name} with the color ${role.color} and ID ${role.id}`);
     } catch (err) {
       errors.push(`Failed to create role ${roleName}: ${(err as Error).message}`);
@@ -54,15 +54,15 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
             properties: {
               roleName: {
                 type: 'string',
-                description: 'The name for the role, max 100 characters',
+                description: 'The name for the role, max 100 characters.',
               },
               roleColor: {
                 type: ['string', 'null'],
-                description: 'Hex color code',
+                description: 'Hex color code. null when not requested.',
               },
               rolePermissions: {
                 type: 'array',
-                description: "The permissions to apply to the role",
+                description: 'The permissions to apply to the role',
                 items: {
                   type: 'string',
                   enum: PermissionsEnum,

@@ -2,12 +2,9 @@ import { ChannelType } from 'discord.js';
 import { ToolFunction } from '../../types.js';
 import OpenAI from 'openai';
 
-const getAllChannels: ToolFunction<{
-  channelTypes?: (keyof typeof ChannelType)[];
-}> = async ({ guild, channelTypes }) => {
-  console.log('Getting all channels from', guild.id, 'of type', channelTypes);
+const getAllChannels: ToolFunction = async ({ guild }) => {
+  console.log('Getting all channels from', guild.id, 'of type');
   const channelList = guild.channels.cache
-    .filter(c => (channelTypes?.length ? channelTypes.includes(ChannelType[c.type] as keyof typeof ChannelType) : true))
     .map(c => `name: ${c.name}, id: ${c.id}, type: ${ChannelType[c.type]}`)
     .join('\n');
   return {
