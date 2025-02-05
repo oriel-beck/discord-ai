@@ -1,7 +1,7 @@
-import OpenAI from 'openai';
-import { ToolFunction } from '../../types.js';
 import { ColorResolvable, PermissionResolvable, PermissionsString } from 'discord.js';
+import OpenAI from 'openai';
 import { PermissionsEnum } from '../../constants.js';
+import { ToolFunction } from '../../types.js';
 
 const createRoles: ToolFunction<{
   roles: { roleName: string; roleColor: ColorResolvable | null; rolePermissions: PermissionResolvable }[];

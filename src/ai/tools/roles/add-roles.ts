@@ -39,7 +39,7 @@ const addRoles: ToolFunction<{ roles: { userId: string; roleIds: string[] }[] }>
         continue;
       }
 
-      const me = guild.members.me || (await guild.members.fetchMe());
+      const me = await guild.members.fetchMe();
       if (me.roles.highest.position <= role.position) {
         errors.push(`The bot cannot add ${roleId} as the role's position is higher or equal to the bot's`);
         continue;
@@ -49,7 +49,7 @@ const addRoles: ToolFunction<{ roles: { userId: string; roleIds: string[] }[] }>
     }
 
     try {
-      const guildMember = guild.members.cache.get(roleSet.userId) || (await guild.members.fetch(roleSet.userId));
+      const guildMember = await guild.members.fetch(roleSet.userId);
 
       if (!guildMember) {
         errors.push(`Failed to find the member ${roleSet.userId}`);

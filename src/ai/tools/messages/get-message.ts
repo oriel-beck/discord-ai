@@ -15,7 +15,7 @@ const getMessage: ToolFunction<{
   }
 
   try {
-    const message = channel.messages.cache.get(messageId) || (await channel.messages.fetch(messageId));
+    const message = await channel.messages.fetch(messageId);
     return { data: `Got message ${JSON.stringify(message.toJSON())}` };
   } catch (err) {
     return { error: `Failed to get message: ${(err as Error).message}` };

@@ -1,6 +1,6 @@
+import { PermissionsString } from 'discord.js';
 import OpenAI from 'openai';
 import { ToolFunction } from '../../types.js';
-import { PermissionsString } from 'discord.js';
 
 const editMember: ToolFunction<{
   memberId: string;
@@ -17,14 +17,14 @@ const editMember: ToolFunction<{
   if (timeout !== undefined && !member.permissions.has('ModerateMembers')) return { error: `${member.id} does not have permissions to moderate members` };
 
   try {
-    const guildMember = guild.members.cache.get(memberId) || (await guild.members.fetch(memberId));
+    const guildMember = await guild.members.fetch(memberId);
 
     if (guildMember.roles.highest.position >= member.roles.highest.position)
       return {
         error: `${member.id} cannot manage ${guildMember.id} as ${guildMember.id}'s highest role position is higher or equal to ${member.id}'s highest role position`,
       };
 
-    const me = guild.members.me || (await guild.members.fetchMe());
+    const me = await guild.members.fetchMe();
     if (guildMember.roles.highest.position >= me.roles.highest.position) {
       return {
         error: `The bot cannot manage ${guildMember.id} as ${guildMember.id}'s highest role position is higher or equal to the bot's`,

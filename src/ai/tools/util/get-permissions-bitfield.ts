@@ -1,6 +1,6 @@
+import { PermissionsBitField } from 'discord.js';
 import OpenAI from 'openai';
 import { ToolFunction } from '../../types.js';
-import { PermissionsBitField } from 'discord.js';
 
 const getPermissionsBitfield: ToolFunction<{ sourceId: string; bitfield: bigint }> = async ({ sourceId, bitfield }) => {
   const bits = new PermissionsBitField(`${bitfield}`);

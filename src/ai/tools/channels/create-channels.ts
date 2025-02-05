@@ -1,7 +1,7 @@
 import { ChannelType, GuildChannelTypes, OverwriteResolvable, PermissionsString } from 'discord.js';
 import OpenAI from 'openai';
-import { ToolFunction } from '../../types.js';
 import { PermissionsEnum } from '../../constants.js';
+import { ToolFunction } from '../../types.js';
 
 const createChannels: ToolFunction<{
   channels: {

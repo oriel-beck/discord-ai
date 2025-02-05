@@ -1,7 +1,7 @@
 import { APIEmbed, PermissionsString } from 'discord.js';
-import { ToolFunction } from '../../types.js';
 import OpenAI from 'openai';
 import { embedDefinition } from '../../constants.js';
+import { ToolFunction } from '../../types.js';
 
 const editMessage: ToolFunction<{
   messageId: string;
@@ -22,7 +22,9 @@ const editMessage: ToolFunction<{
   if (!channel.permissionsFor(member).has('SendMessages')) return { error: `${member.id} does not have permissions to send messages in ${channelId}` };
 
   try {
-    const existing = channel.messages.cache.get(messageId) || (await channel.messages.fetch(messageId));
+    const existing = await channel.messages.fetch(messageId);
+    const me = await guild.members.fetchMe();
+    if (existing.author.id !== me.id) return { error: `Failed to edit message: It is not sent by the bot` };
     const edited = await existing.edit({
       content,
       embeds,

@@ -1,7 +1,7 @@
-import OpenAI from 'openai';
-import { ToolFunction } from '../../types.js';
 import { ColorResolvable, PermissionResolvable, PermissionsString } from 'discord.js';
+import OpenAI from 'openai';
 import { PermissionsEnum } from '../../constants.js';
+import { ToolFunction } from '../../types.js';
 
 const editRoles: ToolFunction<{
   roles: { roleName: string | null; roleColor: ColorResolvable | null; rolePermissions: PermissionResolvable | null; roleId: string }[];
@@ -26,7 +26,7 @@ const editRoles: ToolFunction<{
 
     if (roleId == guild.roles.everyone.id) {
       if (roleColor || roleName) {
-        errors.push(`Cannot edit ${roleId}'s color and name as its the @everyone role`);
+        errors.push(`Cannot edit ${roleId}'s color and name as it's the @everyone role`);
         continue;
       }
     }
@@ -38,11 +38,11 @@ const editRoles: ToolFunction<{
     }
 
     if (member.roles.highest.position <= role.position) {
-      errors.push(`${member.id} edit ${roleId} as the role's position is higher or equal to their highest role`);
+      errors.push(`${member.id} can't edit ${roleId} as the role's position is higher or equal to their highest role`);
       continue;
     }
 
-    const me = guild.members.me || (await guild.members.fetchMe());
+    const me = await guild.members.fetchMe();
     if (me.roles.highest.position <= role.position) {
       errors.push(`The bot cannot add ${roleId} as the role's position is higher or equal to its highest role`);
       continue;

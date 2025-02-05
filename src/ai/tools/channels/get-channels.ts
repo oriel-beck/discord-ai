@@ -1,6 +1,6 @@
 import { ChannelType } from 'discord.js';
-import { ToolFunction } from '../../types.js';
 import OpenAI from 'openai';
+import { ToolFunction } from '../../types.js';
 
 const getAllChannels: ToolFunction = async ({ guild }) => {
   console.log('Getting all channels from', guild.id, 'of type');

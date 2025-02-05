@@ -1,7 +1,7 @@
 import SuperMap from '@thunder04/supermap';
-import type { ToolFunction } from '../../types.js';
 import type { Collection, GuildMember, PermissionsString, Snowflake } from 'discord.js';
 import OpenAI from 'openai';
+import type { ToolFunction } from '../../types.js';
 
 const cache = new SuperMap<string, Collection<Snowflake, GuildMember>>({
   intervalTime: 300000,

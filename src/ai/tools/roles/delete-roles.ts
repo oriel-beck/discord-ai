@@ -1,6 +1,6 @@
 import { PermissionsString } from 'discord.js';
-import { ToolFunction } from '../../types.js';
 import OpenAI from 'openai';
+import { ToolFunction } from '../../types.js';
 
 const deleteRoles: ToolFunction<{
   roleIds: string[];
@@ -19,7 +19,7 @@ const deleteRoles: ToolFunction<{
     }
 
     if (roleId == guild.roles.everyone.id) {
-      errors.push(`Cannot delete ${roleId} as its the @everyone role`);
+      errors.push(`Cannot delete ${roleId} as it's the @everyone role`);
       continue;
     }
 
@@ -30,11 +30,11 @@ const deleteRoles: ToolFunction<{
     }
 
     if (member.roles.highest.position <= role.position) {
-      errors.push(`${member.id} delete ${roleId} as the role's position is higher or equal to their highest role`);
+      errors.push(`${member.id} can't delete ${roleId} as the role's position is higher or equal to their highest role`);
       continue;
     }
 
-    const me = guild.members.me || (await guild.members.fetchMe());
+    const me = await guild.members.fetchMe();
     if (me.roles.highest.position <= role.position) {
       errors.push(`The bot cannot add ${roleId} as the role's position is higher or equal to its highest role`);
       continue;
@@ -42,14 +42,14 @@ const deleteRoles: ToolFunction<{
 
     try {
       await guild.roles.delete(roleId);
-      deletedRoles.push(`Deleted the role ${roleId}`);
+      deletedRoles.push(roleId);
     } catch (err) {
       errors.push(`Failed to delete the role ${roleId}: ${(err as Error).message}`);
     }
   }
 
   return {
-    data: deletedRoles.length ? deletedRoles.join('\n') : undefined,
+    data: deletedRoles.length ? `Deleted the roles ${deletedRoles.join(', ')}` : undefined,
     error: errors.length ? errors.join('\n') : undefined,
   };
 };

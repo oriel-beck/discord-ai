@@ -1,7 +1,7 @@
 import { APIEmbed, PermissionsString } from 'discord.js';
-import { ToolFunction } from '../../types.js';
 import OpenAI from 'openai';
 import { embedDefinition } from '../../constants.js';
+import { ToolFunction } from '../../types.js';
 
 const sendMessage: ToolFunction<{
   embeds: APIEmbed[];

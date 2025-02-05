@@ -41,7 +41,7 @@ const removeRoles: ToolFunction<{ roles: { userId: string; roleIds: string[] }[]
         continue;
       }
 
-      const me = guild.members.me || (await guild.members.fetchMe());
+      const me = await guild.members.fetchMe();
       if (me.roles.highest.position <= role.position) {
         errors.push(`The bot cannot add ${roleId} as the role's position is higher or equal to its highest role`);
         continue;
@@ -50,7 +50,7 @@ const removeRoles: ToolFunction<{ roles: { userId: string; roleIds: string[] }[]
       useableIds.push(role.id);
     }
 
-    const guildMember = guild.members.cache.get(roleSet.userId) || (await guild.members.fetch(roleSet.userId).catch(() => null));
+    const guildMember = await guild.members.fetch(roleSet.userId).catch(() => null);
     if (!guildMember) {
       errors.push(`Failed to find the member ${roleSet.userId}`);
       continue;
