@@ -1,4 +1,4 @@
-import { ChannelType, Client, Events, GatewayIntentBits, Message } from 'discord.js';
+import { ChannelType, Client, Colors, Events, GatewayIntentBits, Message } from 'discord.js';
 import { config } from 'dotenv';
 import { join } from 'path';
 import { DiscordAI } from './ai/index.js';
@@ -74,9 +74,9 @@ const execString = (startTime: number) => `Execution took ${((new Date().getTime
 
 async function chat(message: Message, query: string, type: 'thread' | 'message') {
   const startTime = new Date().getTime();
-  const waitingMessage = await message.reply('Executing for 0s');
+  const waitingMessage = await message.reply('Executing for 0s...');
   const interval = setInterval(() => {
-    waitingMessage.edit(`Executing for ${((new Date().getTime() - startTime) / 1000).toFixed(2)}s`);
+    waitingMessage.edit(`Executing for ${((new Date().getTime() - startTime) / 1000).toFixed(2)}s...`);
   }, 3000);
 
   try {
@@ -94,11 +94,40 @@ async function chat(message: Message, query: string, type: 'thread' | 'message')
             `You were executed in the server ${message.guildId}\nChannel: ${message.channelId}\nExecutor user ID (aka me): ${message.author.id}\nExecutor name (aka me): ${message.author.username}`
           );
     clearInterval(interval);
-    if (res) waitingMessage.edit(`${res}\n\n${execString(startTime)}`).catch(() => null);
-    else waitingMessage.edit(`AI provided no response\n\n${execString(startTime)}`).catch(() => null);
+    if (res)
+      waitingMessage.edit({
+        content: execString(startTime),
+        embeds: [
+          {
+            description: `${res}`,
+            color: Colors.Blurple,
+            title: 'AI Reponse',
+          },
+        ],
+      });
+    else
+      waitingMessage.edit({
+        content: execString(startTime),
+        embeds: [
+          {
+            description: 'AI provided no response',
+            color: Colors.Blurple,
+            title: 'AI Response',
+          },
+        ],
+      });
   } catch (err) {
     clearInterval(interval);
     const errMessage = (err as Error).message;
-    waitingMessage.edit(`Got an error: ${errMessage}\n\n${execString(startTime)}`).catch(() => null);
+    waitingMessage.edit({
+      content: execString(startTime),
+      embeds: [
+        {
+          description: `Got an error: ${errMessage}`,
+          color: Colors.Red,
+          title: 'AI Error',
+        },
+      ],
+    });
   }
 }

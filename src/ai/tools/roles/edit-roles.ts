@@ -31,7 +31,7 @@ const editRoles: ToolFunction<{
         color: roleColor || undefined,
         permissions: rolePermissions || undefined,
       });
-      editedRoles.push(`Edited the role ${role.id} to: name - ${role.name}, color: ${role.color}, permissions - ${role.permissions.toArray().join(', ')}. `);
+      editedRoles.push(`Edited the role ${role.id}: ${JSON.stringify(role.toJSON())}`);
     } catch (err) {
       errors.push(`Failed to edit role ${roleId}: ${(err as Error).message}`);
     }

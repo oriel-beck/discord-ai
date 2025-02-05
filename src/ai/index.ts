@@ -96,7 +96,7 @@ export class DiscordAI {
         messages,
         tools.map(t => t.definition)
       );
-      console.log('AI Replied', inspect(chatCompletion.choices[0].message.tool_calls, false, 2));
+      console.log('AI Replied', inspect(chatCompletion.choices[0].message, false, 4));
 
       messages.push(chatCompletion.choices[0].message);
 
