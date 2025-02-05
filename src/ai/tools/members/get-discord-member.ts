@@ -11,14 +11,14 @@ const getDiscordMemberByUsername: ToolFunction<{ username: string }> = async ({ 
     return {
       error: `Member ${username} cannot be found`,
     };
-  return { data: member.id };
+  return { data: JSON.stringify(member.toJSON()) };
 };
 
 export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
   type: 'function',
   function: {
     name: 'get_discord_member_by_username',
-    description: 'Gets a discord member by their username or nickname, used for getting the user ID of the target(s)',
+    description: 'Gets a discord member by their username or nickname, used for getting any information about the member',
     strict: true,
     parameters: {
       type: 'object',

@@ -16,13 +16,15 @@ const sendDiscordMessage: ToolFunction<{
     channel = gotChannel;
   }
 
-  const sent = await channel
-    .send({
+  try {
+    await channel.send({
       content,
       embeds,
-    })
-    .catch(err => console.log(err));
-  return sent ? { data: 'Sent message' } : { error: 'Failed to send message' };
+    });
+    return { data: 'Sent message' };
+  } catch (err) {
+    return { error: `Failed to send message: ${(err as Error).message}` };
+  }
 };
 
 export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
@@ -31,18 +33,17 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
     name: 'send_message',
     description:
       'Sends a message to the current Discord channel or a target Discord channel, the message can contain content (plain text) alongside multiple embeds. Should only be used if the executor requested it.',
-    strict: true,
     parameters: {
       type: 'object',
-      required: ['channelId', 'content', 'embeds'],
+      required: ['content', 'embeds'],
       additionalProperties: false,
       properties: {
         channelId: {
-          type: ['string', 'null'],
+          type: 'string',
           description: 'The ID of the channel to send the embed message to',
         },
         content: {
-          type: ['string', 'null'],
+          type: 'string',
           description: 'The content (plain text) of the message',
         },
         embeds: {
@@ -53,11 +54,11 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
             required: ['title', 'description', 'url', 'timestamp', 'color', 'footer', 'image', 'thumbnail', 'author', 'fields'],
             properties: {
               title: {
-                type: ['string', 'null'],
+                type: 'string',
                 description: 'Title of the embed (256 characters limit)',
               },
               description: {
-                type: ['string', 'null'],
+                type: 'string',
                 description: 'Description of the embed (4096 characters limit)',
               },
               url: {
@@ -65,7 +66,7 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
                 description: 'URL of the embed',
               },
               timestamp: {
-                type: ['string', 'null'],
+                type: 'string',
                 description: 'Timestamp of the embed content',
               },
               color: {
@@ -73,7 +74,7 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
                 description: 'Color code of the embed',
               },
               footer: {
-                type: ['object', 'null'],
+                type: 'object',
                 description: 'Footer information',
                 required: ['text', 'icon_url'],
                 additionalProperties: false,
@@ -89,7 +90,7 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
                 },
               },
               image: {
-                type: ['object', 'null'],
+                type: 'object',
                 description: 'Image information',
                 required: ['url'],
                 additionalProperties: false,
@@ -101,7 +102,7 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
                 },
               },
               thumbnail: {
-                type: ['object', 'null'],
+                type: 'object',
                 required: ['url'],
                 description: 'Thumbnail information',
                 additionalProperties: false,
@@ -113,7 +114,7 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
                 },
               },
               author: {
-                type: ['object', 'null'],
+                type: 'object',
                 required: ['name', 'url', 'icon_url'],
                 description: 'Author information',
                 additionalProperties: false,
@@ -133,7 +134,7 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
                 },
               },
               fields: {
-                type: ['array', 'null'],
+                type: 'array',
                 description: 'Fields information (only up to 25 fields)',
                 items: {
                   type: 'object',
