@@ -4,7 +4,7 @@ import { ToolFunction } from '../../types.js';
 
 const deleteChannels: ToolFunction<{
   channelIds: string[];
-}> = async ({ guild, channelIds }) => {
+}> = async ({ guild, channelIds, member }) => {
   if (!channelIds.length)
     return {
       error: 'No channels were provided to create',
@@ -15,7 +15,18 @@ const deleteChannels: ToolFunction<{
 
   for (const channelId of channelIds) {
     try {
-      await guild.channels.delete(channelId);
+      const existingChannel = guild.channels.cache.get(channelId);
+      if (!existingChannel) {
+        errors.push(`Channel ${channelId} does not exist`);
+        continue;
+      }
+
+      if (!existingChannel?.permissionsFor(member).has("ManageChannels")) {
+        errors.push(`You do not have permissions to delete ${channelId}`)
+        continue;
+      }
+
+      await existingChannel.delete(`Requested by ${member.id}`);
       createdChannels.push(`Deleted the channel ${channelId}`);
     } catch (err) {
       errors.push(`Failed to delete channel ${channelId}: ${(err as Error).message}`);
@@ -51,6 +62,6 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
   },
 };
 
-export const permission: PermissionsString = 'ManageChannels';
+export const permissions: PermissionsString[] = ['ManageChannels'];
 
 export default deleteChannels;

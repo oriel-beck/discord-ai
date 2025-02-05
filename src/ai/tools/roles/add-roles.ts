@@ -2,8 +2,7 @@ import { PermissionsString } from 'discord.js';
 import OpenAI from 'openai';
 import { ToolFunction, ToolResult } from '../../types.js';
 
-const addRoles: ToolFunction<{ roles: { userId: string; roleIds: string[] }[] }> = async ({ roles, guild }) => {
-  console.log('Adding the roles in the guild', guild.id);
+const addRoles: ToolFunction<{ roles: { userId: string; roleIds: string[] }[] }> = async ({ roles, guild, member }) => {
   if (!roles)
     return {
       error: `No roles were provided to add`,
@@ -24,9 +23,25 @@ const addRoles: ToolFunction<{ roles: { userId: string; roleIds: string[] }[] }>
         continue;
       }
 
+      if (roleId == guild.roles.everyone.id) {
+        errors.push(`Cannot add ${roleId} as its the @everyone role`);
+        continue;
+      }
+
       const role = guild.roles.cache.get(roleId);
       if (!role) {
         errors.push(`Role ID ${roleId} cannot be found`);
+        continue;
+      }
+
+      if (member.roles.highest.position <= role.position) {
+        errors.push(`${member.id} cannot add ${roleId} as the role's position is higher or equal to their highest role`);
+        continue;
+      }
+
+      const me = guild.members.me || (await guild.members.fetchMe());
+      if (me.roles.highest.position <= role.position) {
+        errors.push(`The bot cannot add ${roleId} as the role's position is higher or equal to the bot's`);
         continue;
       }
 
@@ -34,12 +49,19 @@ const addRoles: ToolFunction<{ roles: { userId: string; roleIds: string[] }[] }>
     }
 
     try {
-      const member = guild.members.cache.get(roleSet.userId) || (await guild.members.fetch(roleSet.userId));
-      if (!member) {
+      const guildMember = guild.members.cache.get(roleSet.userId) || (await guild.members.fetch(roleSet.userId));
+
+      if (!guildMember) {
         errors.push(`Failed to find the member ${roleSet.userId}`);
         continue;
       }
-      await member.roles.add(useableIds);
+
+      if (guildMember.roles.highest.position >= member.roles.highest.position) {
+        errors.push(`${member.id} cannot add roles to ${guildMember.id} as ${guildMember.id}'s highest role position is higher or equal to ${member.id}'s`);
+        continue;
+      }
+
+      await guildMember.roles.add(useableIds);
       data.push(`Added ${useableIds.join(', ')} to ${roleSet.userId}.`);
     } catch (err) {
       errors.push(`Failed to add roles to the member ${roleSet.userId}: ${(err as Error).message}`);
@@ -90,6 +112,6 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
   },
 };
 
-export const permission: PermissionsString = 'ManageRoles';
+export const permissions: PermissionsString[] = ['ManageRoles'];
 
 export default addRoles;

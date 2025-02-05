@@ -5,7 +5,7 @@ import { PermissionsEnum } from '../../constants.js';
 
 const editRoles: ToolFunction<{
   roles: { roleName: string | null; roleColor: ColorResolvable | null; rolePermissions: PermissionResolvable | null; roleId: string }[];
-}> = async ({ guild, roles }) => {
+}> = async ({ guild, roles, member }) => {
   if (!Array.isArray(roles) || roles.length === 0) {
     return { error: 'No roles provided for creation' };
   }
@@ -14,14 +14,37 @@ const editRoles: ToolFunction<{
   const errors: string[] = [];
 
   for (const { roleName, roleColor, rolePermissions, roleId } of roles) {
+    if (!/\d{17,20}/.test(roleId)) {
+      errors.push(`Role ID ${roleId} is not a valid Discord Role ID`);
+      continue;
+    }
+
     if (roleName && roleName.length > 100) {
       errors.push(`${roleName} cannot be longer than 100 characters`);
       continue;
     }
 
+    if (roleId == guild.roles.everyone.id) {
+      if (roleColor || roleName) {
+        errors.push(`Cannot edit ${roleId}'s color and name as its the @everyone role`);
+        continue;
+      }
+    }
+
     const role = guild.roles.cache.get(roleId);
     if (!role) {
-      errors.push(`Cannot find the role ${roleId}`);
+      errors.push(`Role ID ${roleId} cannot be found`);
+      continue;
+    }
+
+    if (member.roles.highest.position <= role.position) {
+      errors.push(`${member.id} edit ${roleId} as the role's position is higher or equal to their highest role`);
+      continue;
+    }
+
+    const me = guild.members.me || (await guild.members.fetchMe());
+    if (me.roles.highest.position <= role.position) {
+      errors.push(`The bot cannot add ${roleId} as the role's position is higher or equal to its highest role`);
       continue;
     }
 
@@ -90,6 +113,6 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
   },
 };
 
-export const permission: PermissionsString = 'ManageRoles';
+export const permissions: PermissionsString[] = ['ManageRoles'];
 
 export default editRoles;

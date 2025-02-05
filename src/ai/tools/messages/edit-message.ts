@@ -8,8 +8,7 @@ const editMessage: ToolFunction<{
   embeds: APIEmbed[];
   content?: string;
   channelId?: string;
-}> = async ({ messageId, channel, embeds, content, channelId, guild }) => {
-  console.log('editing embed in', channelId || 'Current Channel', 'in', guild.id);
+}> = async ({ messageId, channel, embeds, content, channelId, guild, member }) => {
   if (!embeds && !content) return { error: 'Cannot edit to an empty message' };
 
   if (channelId) {
@@ -19,6 +18,8 @@ const editMessage: ToolFunction<{
     if (!gotChannel?.isTextBased()) return { error: 'Cannot edit messages in non text based channels' };
     channel = gotChannel;
   }
+
+  if (!channel.permissionsFor(member).has('SendMessages')) return { error: `${member.id} does not have permissions to send messages in ${channelId}` };
 
   try {
     const existing = channel.messages.cache.get(messageId) || (await channel.messages.fetch(messageId));
@@ -61,6 +62,6 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
   },
 };
 
-export const permission: PermissionsString = 'ManageGuild';
+export const permissions: PermissionsString[] = ['ManageGuild'];
 
 export default editMessage;

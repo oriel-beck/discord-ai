@@ -1,7 +1,6 @@
-import { APIEmbed, PermissionsString } from 'discord.js';
-import { ToolFunction } from '../../types.js';
+import { PermissionsString } from 'discord.js';
 import OpenAI from 'openai';
-import { embedDefinition } from '../../constants.js';
+import { ToolFunction } from '../../types.js';
 
 const getMessage: ToolFunction<{
   messageId: string;
@@ -22,6 +21,7 @@ const getMessage: ToolFunction<{
     return { error: `Failed to get message: ${(err as Error).message}` };
   }
 };
+
 
 export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
   type: 'function',
@@ -47,6 +47,6 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
   },
 };
 
-export const permission: PermissionsString = 'ManageGuild';
+export const permissions: PermissionsString[] = ['ManageGuild'];
 
 export default getMessage;

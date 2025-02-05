@@ -7,8 +7,7 @@ const sendMessage: ToolFunction<{
   embeds: APIEmbed[];
   content?: string;
   channelId?: string;
-}> = async ({ channel, embeds, content, channelId, guild }) => {
-  console.log('Sending embed to', channelId || 'Current Channel', 'in', guild.id);
+}> = async ({ channel, embeds, content, channelId, guild, member }) => {
   if (!embeds && !content) return { error: 'Cannot send an empty message' };
 
   if (channelId) {
@@ -18,6 +17,8 @@ const sendMessage: ToolFunction<{
     if (!gotChannel?.isTextBased()) return { error: 'Cannot send message to non text based channels' };
     channel = gotChannel;
   }
+
+  if (!channel.permissionsFor(member).has('SendMessages')) return { error: `${member.id} does not have permissions to send messages in ${channelId}` };
 
   try {
     const sent = await channel.send({
@@ -54,6 +55,6 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
   },
 };
 
-export const permission: PermissionsString = 'ManageGuild';
+export const permissions: PermissionsString[] = ['ManageGuild'];
 
 export default sendMessage;

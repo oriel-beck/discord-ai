@@ -11,7 +11,7 @@ const editChannels: ToolFunction<{
     permissionOverwrites: OverwriteResolvable[];
     channelId: string;
   }[];
-}> = async ({ guild, channels }) => {
+}> = async ({ guild, channels, member }) => {
   if (!channels.length)
     return {
       error: 'No channels were provided to create',
@@ -22,12 +22,24 @@ const editChannels: ToolFunction<{
 
   for (const { channelName, channelType, permissionOverwrites, categoryId, channelId } of channels) {
     try {
-        const edited = await guild.channels.edit(channelId, {
-            name: channelName || undefined,
-            type: channelType ? ChannelType[channelType] as GuildChannelEditOptions['type'] : undefined,
-            permissionOverwrites: permissionOverwrites || undefined,
-            parent: categoryId || undefined
-        })
+      const existingChannel = guild.channels.cache.get(channelId);
+      if (!existingChannel) {
+        errors.push(`Channel ${channelId} does not exist`);
+        continue;
+      }
+
+      if (!existingChannel?.permissionsFor(member).has('ManageChannels')) {
+        errors.push(`You do not have permissions to edit ${channelId}`);
+        continue;
+      }
+
+      const edited = await existingChannel.edit({
+        name: channelName || undefined,
+        type: channelType ? (ChannelType[channelType] as GuildChannelEditOptions['type']) : undefined,
+        permissionOverwrites: permissionOverwrites || undefined,
+        parent: categoryId || undefined,
+        reason: `Requested by ${member.id}`
+      });
       editedChannels.push(`Edited the channel ${edited.id}`);
     } catch (err) {
       errors.push(`Failed to edit the channel ${channelId}: ${(err as Error).message}`);
@@ -66,10 +78,7 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
               channelType: {
                 type: ['string', 'null'],
                 description: 'The type of the channel. null when not requested to change.',
-                enum: [
-                  "GuildText",
-                  "GuildAnnouncement"
-                ],
+                enum: ['GuildText', 'GuildAnnouncement'],
               },
               categoryId: {
                 type: ['string', 'null'],
@@ -90,7 +99,7 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
                       items: {
                         type: 'string',
                         enum: PermissionsEnum,
-                      }
+                      },
                     },
                     deny: {
                       type: 'array',
@@ -98,7 +107,7 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
                       items: {
                         type: 'string',
                         enum: PermissionsEnum,
-                      }
+                      },
                     },
                     id: {
                       type: 'string',
@@ -109,8 +118,8 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
               },
               channelId: {
                 type: 'string',
-                description: 'The channel Id to edit'
-              }
+                description: 'The channel Id to edit',
+              },
             },
           },
         },
@@ -119,6 +128,6 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
   },
 };
 
-export const permission: PermissionsString = 'ManageChannels';
+export const permissions: PermissionsString[] = ['ManageChannels'];
 
 export default editChannels;

@@ -76,6 +76,6 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
   },
 };
 
-export const permission: PermissionsString = 'ManageRoles';
+export const permissions: PermissionsString[] = ['ManageRoles'];
 
 export default createRoles;

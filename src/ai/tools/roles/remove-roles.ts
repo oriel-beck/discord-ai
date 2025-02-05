@@ -2,8 +2,7 @@ import { PermissionsString } from 'discord.js';
 import OpenAI from 'openai';
 import { ToolFunction, ToolResult } from '../../types.js';
 
-const removeRoles: ToolFunction<{ roles: { userId: string; roleIds: string[] }[] }> = async ({ roles, guild }) => {
-  console.log('removing the roles in the guild', guild.id);
+const removeRoles: ToolFunction<{ roles: { userId: string; roleIds: string[] }[] }> = async ({ roles, guild, member }) => {
   if (!roles)
     return {
       error: `No roles were provided to remove`,
@@ -14,13 +13,20 @@ const removeRoles: ToolFunction<{ roles: { userId: string; roleIds: string[] }[]
   const res: ToolResult = {};
 
   for (const roleSet of roles) {
-    if (!/\d{17,20}/.test(roleSet.userId))
+    if (!/\d{17,20}/.test(roleSet.userId)) {
       errors.push(`${roleSet.userId} is not a valid Discord user ID. You can get the user ID from the result of the tool get_discord_member_by_username`);
+      continue;
+    }
     const useableIds: string[] = [];
 
     for (const roleId of roleSet.roleIds) {
       if (!/\d{17,20}/.test(roleId)) {
         errors.push(`Role ID ${roleId} is not a valid Discord Role ID`);
+        continue;
+      }
+
+      if (roleId == guild.roles.everyone.id) {
+        errors.push(`Cannot add ${roleId} as its the @everyone role`);
         continue;
       }
 
@@ -30,17 +36,33 @@ const removeRoles: ToolFunction<{ roles: { userId: string; roleIds: string[] }[]
         continue;
       }
 
+      if (member.roles.highest.position <= role.position) {
+        errors.push(`${member.id} cannot add ${roleId} as the role's position is higher or equal to their highest role`);
+        continue;
+      }
+
+      const me = guild.members.me || (await guild.members.fetchMe());
+      if (me.roles.highest.position <= role.position) {
+        errors.push(`The bot cannot add ${roleId} as the role's position is higher or equal to its highest role`);
+        continue;
+      }
+
       useableIds.push(role.id);
     }
 
-    const member = guild.members.cache.get(roleSet.userId) || (await guild.members.fetch(roleSet.userId).catch(() => null));
-    if (!member) {
+    const guildMember = guild.members.cache.get(roleSet.userId) || (await guild.members.fetch(roleSet.userId).catch(() => null));
+    if (!guildMember) {
       errors.push(`Failed to find the member ${roleSet.userId}`);
       continue;
     }
 
+    if (guildMember.roles.highest.position >= member.roles.highest.position) {
+      errors.push(`${member.id} cannot remove roles from ${guildMember.id} as ${guildMember.id}'s highest role is higher or equal to ${member.id}'s`);
+      continue;
+    }
+
     try {
-      await member.roles.remove(useableIds);
+      await guildMember.roles.remove(useableIds);
       data.push(`removed ${useableIds.join(', ')} from ${roleSet.userId}.`);
     } catch (err) {
       errors.push(`Failed to remove roles from the member ${roleSet.userId}: ${(err as Error).message}`);
@@ -91,6 +113,6 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
   },
 };
 
-export const permission: PermissionsString = 'ManageRoles';
+export const permissions: PermissionsString[] = ['ManageRoles'];
 
 export default removeRoles;

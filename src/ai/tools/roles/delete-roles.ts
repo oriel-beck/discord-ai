@@ -4,7 +4,7 @@ import OpenAI from 'openai';
 
 const deleteRoles: ToolFunction<{
   roleIds: string[];
-}> = async ({ guild, roleIds }) => {
+}> = async ({ guild, roleIds, member }) => {
   if (!Array.isArray(roleIds) || roleIds.length === 0) {
     return { error: 'No roles provided for deletion' };
   }
@@ -14,9 +14,32 @@ const deleteRoles: ToolFunction<{
 
   for (const roleId of roleIds) {
     if (!/\d{17,20}/.test(roleId)) {
-      errors.push(`${roleId} is not a valid role ID`)
+      errors.push(`Role ID ${roleId} is not a valid Discord Role ID`);
       continue;
     }
+
+    if (roleId == guild.roles.everyone.id) {
+      errors.push(`Cannot delete ${roleId} as its the @everyone role`);
+      continue;
+    }
+
+    const role = guild.roles.cache.get(roleId);
+    if (!role) {
+      errors.push(`Role ID ${roleId} cannot be found`);
+      continue;
+    }
+
+    if (member.roles.highest.position <= role.position) {
+      errors.push(`${member.id} delete ${roleId} as the role's position is higher or equal to their highest role`);
+      continue;
+    }
+
+    const me = guild.members.me || (await guild.members.fetchMe());
+    if (me.roles.highest.position <= role.position) {
+      errors.push(`The bot cannot add ${roleId} as the role's position is higher or equal to its highest role`);
+      continue;
+    }
+
     try {
       await guild.roles.delete(roleId);
       deletedRoles.push(`Deleted the role ${roleId}`);
@@ -54,6 +77,6 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
   },
 };
 
-export const permission: PermissionsString = 'ManageRoles';
+export const permissions: PermissionsString[] = ['ManageRoles'];
 
 export default deleteRoles;

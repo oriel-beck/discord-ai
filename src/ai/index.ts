@@ -12,7 +12,7 @@ const MODEL: OpenAI.Chat.ChatModel = 'gpt-4o-mini';
 interface ToolFile {
   default: ToolFunction;
   definition: OpenAI.Chat.Completions.ChatCompletionTool;
-  permission?: PermissionsString;
+  permissions?: PermissionsString[];
 }
 export class DiscordAI {
   openai!: OpenAI;
@@ -134,7 +134,7 @@ export class DiscordAI {
   private getAvailableTools(member: GuildMember) {
     const availableTools: ToolFile[] = [];
     for (const tool of this.tools) {
-      if (!tool.permission || member.permissions.has(tool.permission)) {
+      if (!tool.permissions || member.permissions.any(tool.permissions)) {
         availableTools.push(tool);
       }
     }

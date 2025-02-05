@@ -105,6 +105,6 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
   },
 };
 
-export const permission: PermissionsString = 'ManageChannels';
+export const permissions: PermissionsString[] = ['ManageChannels'];
 
 export default createChannels;
