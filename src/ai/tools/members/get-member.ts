@@ -1,7 +1,7 @@
 import OpenAI from 'openai';
 import { ToolFunction } from '../../types.js';
 
-const getDiscordMemberByUsername: ToolFunction<{ username: string }> = async ({ username, guild }) => {
+const getMemberByUsername: ToolFunction<{ username: string }> = async ({ username, guild }) => {
   console.log(`Getting member from ${guild.id} by username ${username}`);
   const member =
     guild.members.cache.find(
@@ -34,4 +34,4 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
   },
 };
 
-export default getDiscordMemberByUsername;
+export default getMemberByUsername;

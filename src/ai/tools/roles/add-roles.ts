@@ -33,13 +33,12 @@ const addRoles: ToolFunction<{ roles: { userId: string; roleIds: string[] }[] }>
       useableIds.push(role.id);
     }
 
-    const member = guild.members.cache.get(roleSet.userId) || (await guild.members.fetch(roleSet.userId).catch(() => null));
-    if (!member) {
-      errors.push(`Failed to find the member ${roleSet.userId}`);
-      continue;
-    }
-
     try {
+      const member = guild.members.cache.get(roleSet.userId) || (await guild.members.fetch(roleSet.userId));
+      if (!member) {
+        errors.push(`Failed to find the member ${roleSet.userId}`);
+        continue;
+      }
       await member.roles.add(useableIds);
       data.push(`Added ${useableIds.join(', ')} to ${roleSet.userId}.`);
     } catch (err) {

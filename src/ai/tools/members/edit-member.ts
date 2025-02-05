@@ -7,13 +7,15 @@ const editMember: ToolFunction<{
   mute?: boolean;
   deaf?: boolean;
   timeout?: string;
-}> = async ({ guild, memberId, nickname, mute, deaf, timeout }) => {
+  roles?: string[];
+}> = async ({ guild, memberId, nickname, mute, deaf, timeout, roles }) => {
     try {
         const member = guild.members.cache.get(memberId) || (await guild.members.fetch(memberId));
         await member.edit({
           nick: nickname,
           mute: mute,
           deaf: deaf,
+          roles,
           communicationDisabledUntil: timeout ? new Date(timeout) : undefined,
         });
         return { data: `Edited ${member.id}` };
@@ -52,6 +54,14 @@ export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
             type: 'string',
             description: 'The timeout end time as an ISO timestamp. Use get_current_date_time to get the current time'
         },
+        roles: {
+          type: 'array',
+          description: 'The list of arrays to set for the users, this overrides all existing roles on the user',
+          items: {
+            type: 'string',
+            description: 'The role Id to set to the user'
+          }
+        }
       },
     },
   },
