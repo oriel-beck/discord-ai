@@ -101,7 +101,7 @@ async function chat(message: Message, query: string, type: 'thread' | 'message')
           {
             description: `${res}`,
             color: Colors.Blurple,
-            title: 'AI Reponse',
+            title: 'AI Response',
           },
         ],
       });
