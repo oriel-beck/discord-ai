@@ -112,7 +112,7 @@ export class DiscordAI {
           const result = await toolManager.executeTool(tool.function.name, tool.function.arguments);
           toolResponses.push({
             role: 'tool',
-            content: result || 'Error: No result',
+            content: JSON.stringify(result) || 'Error: No result',
             tool_call_id: tool.id,
           });
         }

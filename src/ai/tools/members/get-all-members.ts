@@ -3,14 +3,15 @@ import type { Collection, GuildMember, PermissionsString, Snowflake } from 'disc
 import OpenAI from 'openai';
 import type { ToolFunction } from '../../types.js';
 
-const cache = new SuperMap<string, Collection<Snowflake, GuildMember>>({
+const cache = new SuperMap<string, boolean>({
   intervalTime: 300000,
 });
 
 const getAllMembers: ToolFunction = async ({ guild }) => {
   if (cache.get(guild.id))
     return {
-      data: `If you cannot find the member you are looking for here skip the operation and report to the executor\n\n${formatMembers(cache.get(guild.id)!)}`,
+      data: formatMembers(guild.members.cache),
+      information: 'If you cannot find the member you are looking for here skip the operation and report to the executor',
     };
 
   const members = await guild.members.fetch().catch(() => null);
@@ -19,10 +20,11 @@ const getAllMembers: ToolFunction = async ({ guild }) => {
       error: `Failed to fetch members of server ${guild.id}`,
     };
 
-  cache.set(guild.id, members);
+  cache.set(guild.id, true);
 
   return {
-    data: `If you cannot find the member you are looking for here skip the operation and report to the executor\n\n${formatMembers(members)}`,
+    data: formatMembers(members),
+    information: 'If you cannot find the member you are looking for here skip the operation and report to the executor',
   };
 };
 

@@ -2,10 +2,12 @@ import OpenAI from 'openai';
 import { ToolFunction } from '../../types.js';
 
 const getAllRoles: ToolFunction = async ({ guild }) => {
-  const roles = guild.roles.cache.map(r => JSON.stringify(r.toJSON()));
+  const roles = guild.roles.cache.map(r => r.toJSON());
   if (!roles) return { error: 'Failed to get role list' };
   return {
-    data: `If you can't find the role you are looking for here skip the operation and report to the executor. Note: The role @everyone cannot have its color, name and position edited, nor can it be added/removed from users.\n\n${roles}`,
+    data: JSON.stringify(roles),
+    information:
+      "If you can't find the role you are looking for here skip the operation and report to the executor. Note: The role @everyone cannot have its color, name and position edited, nor can it be added/removed from users.",
   };
 };
 

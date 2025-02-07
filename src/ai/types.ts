@@ -12,4 +12,5 @@ export type ToolFunction<T = {}> = (args: ToolArguments & T) => ToolResult | Pro
 export interface ToolResult {
   error?: string;
   data?: string;
+  information?: string;
 }
