@@ -10,20 +10,26 @@ const createRoles: ToolFunction<{
     return { error: 'No roles provided for creation' };
   }
 
-  const createdRoles: string[] = [];
-  const errors: string[] = [];
-
-  for (const { roleName, roleColor, rolePermissions } of roles) {
+  const promises = roles.map(async ({ roleName, roleColor, rolePermissions }) => {
     if (roleName.length > 100) {
-      errors.push(`${roleName} cannot be longer than 100 characters`);
-      continue;
+      throw `${roleName} cannot be longer than 100 characters`;
     }
-
     try {
       const role = await guild.roles.create({ name: roleName, color: roleColor || undefined, permissions: rolePermissions });
-      createdRoles.push(`Created a role called ${role.name} with the color ${role.color} and ID ${role.id}`);
+      return `Created ${role.name} - ${role.color} - ${role.id}`;
     } catch (err) {
-      errors.push(`Failed to create role ${roleName}: ${(err as Error).message}`);
+      throw `Failed ${roleName}: ${(err as Error).message}`;
+    }
+  });
+  const tasks = await Promise.allSettled(promises);
+
+  const createdRoles: string[] = [];
+  const errors: string[] = [];
+  for (const task of tasks) {
+    if (task.status === 'fulfilled') {
+      createdRoles.push(task.value);
+    } else {
+      errors.push(task.reason);
     }
   }
 

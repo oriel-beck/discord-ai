@@ -17,32 +17,39 @@ const editChannels: ToolFunction<{
       error: 'No channels were provided to create',
     };
 
-  const editedChannels = [];
-  const errors = [];
+  const promises = channels.map(async ({ channelName, channelType, permissionOverwrites, categoryId, channelId }) => {
+    const existingChannel = guild.channels.cache.get(channelId);
+    if (!existingChannel) {
+      throw `Channel ${channelId} does not exist`;
+    }
 
-  for (const { channelName, channelType, permissionOverwrites, categoryId, channelId } of channels) {
+    if (!existingChannel?.permissionsFor(member).has('ManageChannels')) {
+      throw `You do not have permissions to edit ${channelId}`;
+    }
+
     try {
-      const existingChannel = guild.channels.cache.get(channelId);
-      if (!existingChannel) {
-        errors.push(`Channel ${channelId} does not exist`);
-        continue;
-      }
-
-      if (!existingChannel?.permissionsFor(member).has('ManageChannels')) {
-        errors.push(`You do not have permissions to edit ${channelId}`);
-        continue;
-      }
-
       const edited = await existingChannel.edit({
         name: channelName || undefined,
         type: channelType ? (ChannelType[channelType] as GuildChannelEditOptions['type']) : undefined,
         permissionOverwrites: permissionOverwrites || undefined,
         parent: categoryId || undefined,
-        reason: `Requested by ${member.id}`
+        reason: `Requested by ${member.id}`,
       });
-      editedChannels.push(`Edited the channel ${edited.id}`);
+      return `Edited ${edited.id}`;
     } catch (err) {
-      errors.push(`Failed to edit the channel ${channelId}: ${(err as Error).message}`);
+      throw `Failed ${channelId}: ${(err as Error).message}`;
+    }
+  });
+
+  const editedChannels: string[] = [];
+  const errors: string[] = [];
+
+  const tasks = await Promise.allSettled(promises);
+  for (const task of tasks) {
+    if (task.status === 'fulfilled') {
+      editedChannels.push(task.value);
+    } else {
+      errors.push(task.reason);
     }
   }
 

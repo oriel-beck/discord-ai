@@ -3,7 +3,7 @@ import { ToolManager } from './tools.js';
 import { inspect } from 'util';
 import { readdir, stat } from 'fs/promises';
 import { join } from 'path';
-import { ToolFunction } from './types.js';
+import { ToolFunction, ToolResult } from './types.js';
 import { GuildMember, GuildTextBasedChannel, Message, PermissionsString } from 'discord.js';
 import { initMessages } from './init.js';
 import SuperMap from '@thunder04/supermap';
@@ -106,17 +106,29 @@ export class DiscordAI {
       }
 
       if (chatCompletion.choices[0].message.tool_calls) {
-        const toolResponses: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
-        for (const tool of chatCompletion.choices[0].message.tool_calls) {
-          console.log('Tool use', tool.function.name);
-          const result = await toolManager.executeTool(tool.function.name, tool.function.arguments);
-          toolResponses.push({
-            role: 'tool',
-            content: JSON.stringify(result) || 'Error: No result',
-            tool_call_id: tool.id,
-          });
-        }
-        messages = messages.concat(toolResponses);
+        const promises = chatCompletion.choices[0].message.tool_calls.map(tool =>
+          toolManager
+            .executeTool(tool.function.name, tool.function.arguments)
+            .then(
+              result =>
+                ({
+                  role: 'tool',
+                  content: JSON.stringify(result) || 'Error: No result',
+                  tool_call_id: tool.id,
+                }) as OpenAI.Chat.Completions.ChatCompletionMessageParam
+            )
+            .catch(
+              (err: Error) =>
+                ({
+                  role: 'tool',
+                  content: `Error: ${err.message}`,
+                  tool_call_id: tool.id,
+                }) as OpenAI.Chat.Completions.ChatCompletionMessageParam
+            )
+        );
+        const results = await Promise.all(promises);
+
+        messages = messages.concat(results);
       }
     }
   }

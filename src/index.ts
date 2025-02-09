@@ -79,6 +79,8 @@ async function chat(message: Message, query: string, type: 'thread' | 'message')
     waitingMessage.edit(`Executing for ${((new Date().getTime() - startTime) / 1000).toFixed(2)}s...`);
   }, 3000);
 
+  const me = await message.guild?.members.fetchMe();
+
   try {
     const res =
       type === 'message'
@@ -86,12 +88,12 @@ async function chat(message: Message, query: string, type: 'thread' | 'message')
             message,
             query,
             waitingMessage.id,
-            `You were executed in the server ${message.guildId}\nChannel: ${message.channelId}\nExecutor user ID (aka me): ${message.author.id}\nExecutor name (aka me): ${message.author.username}`
+            `You were executed in the server ${message.guildId}\nChannel: ${message.channelId}\nExecutor user ID (aka me): ${message.author.id}\nExecutor name (aka me): ${message.author.username}. You cannot add, remove, edit, or delete roles which have 'position' which is higher than your highest role position, which is ${me?.roles.highest.position}`
           )
         : await discordAi.handleConversationInThreads(
             message,
             query,
-            `You were executed in the server ${message.guildId}\nChannel: ${message.channelId}\nExecutor user ID (aka me): ${message.author.id}\nExecutor name (aka me): ${message.author.username}`
+            `You were executed in the server ${message.guildId}\nChannel: ${message.channelId}\nExecutor user ID (aka me): ${message.author.id}\nExecutor name (aka me): ${message.author.username}. You cannot add, remove, edit, or delete roles which have 'position' which is higher than your highest role position, which is ${me?.roles.highest.position}`
           );
     clearInterval(interval);
     if (res)

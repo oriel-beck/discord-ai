@@ -10,31 +10,38 @@ const deleteChannels: ToolFunction<{
       error: 'No channels were provided to create',
     };
 
-  const createdChannels = [];
-  const errors = [];
+  const promises = channelIds.map(async channelId => {
+    const existingChannel = guild.channels.cache.get(channelId);
+    if (!existingChannel) {
+      throw `Channel ${channelId} does not exist`;
+    }
 
-  for (const channelId of channelIds) {
+    if (!existingChannel?.permissionsFor(member).has('ManageChannels')) {
+      throw `You do not have permissions to delete ${channelId}`;
+    }
+
     try {
-      const existingChannel = guild.channels.cache.get(channelId);
-      if (!existingChannel) {
-        errors.push(`Channel ${channelId} does not exist`);
-        continue;
-      }
-
-      if (!existingChannel?.permissionsFor(member).has("ManageChannels")) {
-        errors.push(`You do not have permissions to delete ${channelId}`)
-        continue;
-      }
-
       await existingChannel.delete(`Requested by ${member.id}`);
-      createdChannels.push(`Deleted the channel ${channelId}`);
+      return `Deleted ${channelId}`;
     } catch (err) {
-      errors.push(`Failed to delete channel ${channelId}: ${(err as Error).message}`);
+      throw `Failed ${channelId}: ${(err as Error).message}`;
+    }
+  });
+
+  const deletedchannels: string[] = [];
+  const errors: string[] = [];
+
+  const tasks = await Promise.allSettled(promises);
+  for (const task of tasks) {
+    if (task.status === 'fulfilled') {
+      deletedchannels.push(task.value);
+    } else {
+      errors.push(task.reason);
     }
   }
 
   return {
-    data: createdChannels.length ? createdChannels.join('\n') : undefined,
+    data: deletedchannels.length ? deletedchannels.join('\n') : undefined,
     error: errors.length ? errors.join('\n') : undefined,
   };
 };

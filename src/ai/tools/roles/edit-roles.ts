@@ -10,42 +10,33 @@ const editRoles: ToolFunction<{
     return { error: 'No roles provided for creation' };
   }
 
-  const editedRoles: string[] = [];
-  const errors: string[] = [];
-
-  for (const { roleName, roleColor, rolePermissions, roleId } of roles) {
+  const promises = roles.map(async ({ roleName, roleColor, rolePermissions, roleId }) => {
     if (!/\d{17,20}/.test(roleId)) {
-      errors.push(`Role ID ${roleId} is not a valid Discord Role ID`);
-      continue;
+      throw `Role ID ${roleId} is not a valid Discord Role ID`;
     }
 
     if (roleName && roleName.length > 100) {
-      errors.push(`${roleName} cannot be longer than 100 characters`);
-      continue;
+      throw `${roleName} cannot be longer than 100 characters`;
     }
 
     if (roleId == guild.roles.everyone.id) {
       if (roleColor || roleName) {
-        errors.push(`Cannot edit ${roleId}'s color and name as it's the @everyone role`);
-        continue;
+        throw `Cannot edit ${roleId}'s color and name as it's the @everyone role`;
       }
     }
 
     const role = guild.roles.cache.get(roleId);
     if (!role) {
-      errors.push(`Role ID ${roleId} cannot be found`);
-      continue;
+      throw `Role ID ${roleId} cannot be found`;
     }
 
     if (member.roles.highest.position <= role.position) {
-      errors.push(`${member.id} can't edit ${roleId} as the role's position is higher or equal to their highest role`);
-      continue;
+      throw `${member.id} can't edit ${roleId} as the role's position is higher or equal to their highest role`;
     }
 
     const me = await guild.members.fetchMe();
     if (me.roles.highest.position <= role.position) {
-      errors.push(`The bot cannot add ${roleId} as the role's position is higher or equal to its highest role`);
-      continue;
+      throw `The bot cannot add ${roleId} as the role's position is higher or equal to its highest role`;
     }
 
     try {
@@ -54,9 +45,21 @@ const editRoles: ToolFunction<{
         color: roleColor || undefined,
         permissions: rolePermissions || undefined,
       });
-      editedRoles.push(`Edited the role ${role.id}: ${JSON.stringify(role.toJSON())}`);
+      return `Edited ${role.id}: ${JSON.stringify(role.toJSON())}`;
     } catch (err) {
-      errors.push(`Failed to edit role ${roleId}: ${(err as Error).message}`);
+      throw `Failed ${roleId}: ${(err as Error).message}`;
+    }
+  });
+
+  const tasks = await Promise.allSettled(promises);
+
+  const editedRoles: string[] = [];
+  const errors: string[] = [];
+  for (const task of tasks) {
+    if (task.status === 'fulfilled') {
+      editedRoles.push(task.value);
+    } else {
+      errors.push(task.reason);
     }
   }
 

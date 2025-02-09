@@ -16,10 +16,9 @@ const createChannels: ToolFunction<{
       error: 'No channels were provided to create',
     };
 
-  const createdChannels = [];
-  const errors = [];
 
-  for (const { channelName: name, channelType, permissionOverwrites, categoryId: parent } of channels) {
+
+  const promises = channels.map(async ({ channelName: name, channelType, permissionOverwrites, categoryId: parent }) => {
     try {
       const created = await guild.channels.create({
         name,
@@ -27,12 +26,24 @@ const createChannels: ToolFunction<{
         permissionOverwrites,
         type: ChannelType[channelType] as GuildChannelTypes,
       });
-      createdChannels.push(`Created the channel ${name} of type ${channelType} as ${created.name}`);
+      return `Created ${name} - ${channelType} as ${created.name}`;
     } catch (err) {
-      errors.push(`Failed to create channel ${name} of type ${channelType}: ${(err as Error).message}`);
+      throw `Failed ${name} of type ${channelType}: ${(err as Error).message}`;
+    }
+  });
+
+  const createdChannels: string[] = [];
+  const errors: string[] = [];
+
+  const tasks = await Promise.allSettled(promises);
+  for (const task of tasks) {
+    if (task.status === 'fulfilled') {
+      createdChannels.push(task.value);
+    } else {
+      errors.push(task.reason);
     }
   }
-
+  
   return {
     data: createdChannels.length ? createdChannels.join('\n') : undefined,
     error: errors.length ? errors.join('\n') : undefined,
