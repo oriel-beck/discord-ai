@@ -126,9 +126,7 @@ export class DiscordAI {
                 }) as OpenAI.Chat.Completions.ChatCompletionMessageParam
             )
         );
-        const results = await Promise.all(promises);
-
-        messages = messages.concat(results);
+        messages.push(...await Promise.all(promises));
       }
     }
   }

@@ -1,6 +1,6 @@
 import { ColorResolvable, PermissionResolvable, PermissionsString } from 'discord.js';
 import OpenAI from 'openai';
-import { PermissionsEnum } from '../../constants.js';
+import { PermissionsEnum, validateStringArray } from '../../constants.js';
 import { ToolFunction } from '../../types.js';
 
 const editRoles: ToolFunction<{
@@ -39,11 +39,16 @@ const editRoles: ToolFunction<{
       throw `The bot cannot add ${roleId} as the role's position is higher or equal to its highest role`;
     }
 
+    rolePermissions ??= [];
+
+    const validPermissions = !rolePermissions || validateStringArray(rolePermissions);
+    if (!validPermissions) throw `Invalid permissions overwrites for ${roleName}`;
+
     try {
       const role = await guild.roles.edit(roleId, {
         name: roleName || undefined,
         color: roleColor || undefined,
-        permissions: rolePermissions || undefined,
+        permissions: rolePermissions,
       });
       return `Edited ${role.id}: ${JSON.stringify(role.toJSON())}`;
     } catch (err) {

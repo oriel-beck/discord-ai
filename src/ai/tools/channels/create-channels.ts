@@ -1,6 +1,6 @@
 import { ChannelType, GuildChannelTypes, OverwriteResolvable, PermissionsString } from 'discord.js';
 import OpenAI from 'openai';
-import { PermissionsEnum } from '../../constants.js';
+import { PermissionsEnum, validateStringArray } from '../../constants.js';
 import { ToolFunction } from '../../types.js';
 
 const createChannels: ToolFunction<{
@@ -16,9 +16,15 @@ const createChannels: ToolFunction<{
       error: 'No channels were provided to create',
     };
 
-
-
   const promises = channels.map(async ({ channelName: name, channelType, permissionOverwrites, categoryId: parent }) => {
+    const validOverwrites = permissionOverwrites.some(overwrite => {
+      if (!overwrite.allow && !overwrite.deny) return false;
+      if (overwrite.deny && !validateStringArray(overwrite.deny)) return false;
+      if (overwrite.allow && !validateStringArray(overwrite.allow)) return false;
+      return true;
+    });
+    if (!validOverwrites) throw `Invalid permissions overwrites for ${name}`;
+    
     try {
       const created = await guild.channels.create({
         name,
@@ -43,7 +49,7 @@ const createChannels: ToolFunction<{
       errors.push(task.reason);
     }
   }
-  
+
   return {
     data: createdChannels.length ? createdChannels.join('\n') : undefined,
     error: errors.length ? errors.join('\n') : undefined,

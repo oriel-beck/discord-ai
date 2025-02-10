@@ -53,11 +53,13 @@ export const PermissionsEnum: PermissionsString[] = [
   'UseExternalApps',
 ];
 
+export const validateStringArray = (arr: unknown): arr is string[] => Array.isArray(arr) && arr.every(item => typeof item === 'string');
+
 export const embedDefinition = {
   type: 'array',
   items: {
-    additionalProperties: false,
     type: 'object',
+    additionalProperties: false,
     required: ['title', 'description', 'url', 'timestamp', 'color', 'footer', 'image', 'thumbnail', 'author', 'fields'],
     properties: {
       title: {

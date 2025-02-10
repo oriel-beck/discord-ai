@@ -1,6 +1,6 @@
 import { ChannelType, GuildChannelEditOptions, OverwriteResolvable, PermissionsString } from 'discord.js';
 import OpenAI from 'openai';
-import { PermissionsEnum } from '../../constants.js';
+import { PermissionsEnum, validateStringArray } from '../../constants.js';
 import { ToolFunction } from '../../types.js';
 
 const editChannels: ToolFunction<{
@@ -26,6 +26,14 @@ const editChannels: ToolFunction<{
     if (!existingChannel?.permissionsFor(member).has('ManageChannels')) {
       throw `You do not have permissions to edit ${channelId}`;
     }
+
+    const validOverwrites = permissionOverwrites.some(overwrite => {
+      if (!overwrite.allow && !overwrite.deny) return false;
+      if (overwrite.deny && !validateStringArray(overwrite.deny)) return false;
+      if (overwrite.allow && !validateStringArray(overwrite.allow)) return false;
+      return true;
+    });
+    if (!validOverwrites) throw `Invalid permissions overwrites for ${name}`;
 
     try {
       const edited = await existingChannel.edit({

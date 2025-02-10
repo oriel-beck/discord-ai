@@ -1,6 +1,6 @@
 import { ColorResolvable, PermissionResolvable, PermissionsString } from 'discord.js';
 import OpenAI from 'openai';
-import { PermissionsEnum } from '../../constants.js';
+import { PermissionsEnum, validateStringArray } from '../../constants.js';
 import { ToolFunction } from '../../types.js';
 
 const createRoles: ToolFunction<{
@@ -14,6 +14,12 @@ const createRoles: ToolFunction<{
     if (roleName.length > 100) {
       throw `${roleName} cannot be longer than 100 characters`;
     }
+
+    rolePermissions ??= [];
+
+    const validPermissions = !rolePermissions || validateStringArray(rolePermissions);
+    if (!validPermissions) throw `Invalid permissions overwrites for ${roleName}`;
+
     try {
       const role = await guild.roles.create({ name: roleName, color: roleColor || undefined, permissions: rolePermissions });
       return `Created ${role.name} - ${role.color} - ${role.id}`;
