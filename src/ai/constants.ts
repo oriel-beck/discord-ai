@@ -1,6 +1,4 @@
-import { PermissionsString } from 'discord.js';
-
-export const PermissionsEnum: PermissionsString[] = [
+export const PermissionsEnum = [
   'CreateInstantInvite',
   'KickMembers',
   'BanMembers',
@@ -51,7 +49,7 @@ export const PermissionsEnum: PermissionsString[] = [
   'SendVoiceMessages',
   'SendPolls',
   'UseExternalApps',
-];
+] as const;
 
 export const validateStringArray = (arr: unknown): arr is string[] => Array.isArray(arr) && arr.every(item => typeof item === 'string');
 

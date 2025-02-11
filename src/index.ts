@@ -2,10 +2,13 @@ import { ChannelType, Client, Colors, Events, GatewayIntentBits, Message } from 
 import { config } from 'dotenv';
 import { join } from 'path';
 import { DiscordAI } from './ai/index.js';
+import { DiscordAIV2 } from './ai-v2/index.js';
+import { AIMessage } from '@langchain/core/messages';
 
 config();
 
 const discordAi = new DiscordAI(process.env.OPEN_AI_API_KEY!, join(import.meta.dirname, 'ai', 'tools'));
+const discordAiV2 = new DiscordAIV2(process.env.OPEN_AI_API_KEY!, join(import.meta.dirname, 'ai-v2', 'tools'));
 
 const managerRole = '1334178594494091364';
 const allowedGuild = '1334178302356619335';
@@ -65,6 +68,11 @@ client.on(Events.MessageCreate, async message => {
       thread.setArchived(true);
       thread.setLocked(true);
     });
+  } else if (split[0] === '+test') {
+    const query = split.splice(1).join(' ');
+
+    const t = await discordAiV2.handleConversation(message, query);
+    message.reply((t.at(-1) as AIMessage).content.toString() || "No response")
   }
 });
 

@@ -52,7 +52,7 @@ const removeRoles: ToolFunction<{ roles: { userId: string; roleIds: string[] }[]
     const useableIds = (await Promise.allSettled(innerPromises)).reduce((acc, p) => (p.status === 'fulfilled' ? [...acc, p.value] : acc), [] as string[]);
 
     try {
-      await guildMember.roles.add(useableIds);
+      await guildMember.roles.remove(useableIds);
       return `Removed ${useableIds.join(', ')} from ${roleSet.userId}.`;
     } catch (err) {
       throw `Failed ${roleSet.userId}: ${(err as Error).message}`;
