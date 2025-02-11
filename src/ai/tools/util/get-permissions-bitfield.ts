@@ -6,7 +6,7 @@ import tool from '../../tool.js';
 const schema = object({
   sourceId: discordIdSchema(),
   bitfield: bigint({ message: 'Bitfield must be a permission bifield' }).describe('A permissions bitfield'),
-});
+}).strict();
 
 export default () =>
   tool(

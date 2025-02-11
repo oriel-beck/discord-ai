@@ -4,11 +4,11 @@ import { ToolArguments } from '../../types.js';
 export default ({ guild }: ToolArguments) =>
   tool(
     () => {
-      const channelList = guild.channels.cache.map(c => c.toJSON());
+      const channelList = guild.channels.cache.map(c => ({ ...(c.toJSON() as {}), canSendMessages: c.isTextBased() }));
       return {
         data: JSON.stringify(channelList),
         information:
-          'If you cannot find the channel you are looking for here skip the operation and report to the executor\nYou are allowed to send messages and embeds to channel types of GuildText, GuildVoice, GuildAnnouncement, GuildNews, AnnouncementThread, PublicThread, PrivateThread and GuildStageVoice',
+          'If you cannot find the channel you are looking for here skip the operation and report to the executor\nYou are allowed to send messages and embeds to all channels with `canSendMessages: true`',
       };
     },
     {

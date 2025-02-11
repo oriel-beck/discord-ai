@@ -22,7 +22,7 @@ export class Tool<T extends ZodObjectAny = any> {
       function: {
         name: this.schema.name,
         description: this.schema.description,
-        parameters: this.schema.schema ? zodToJsonSchema(this.schema.schema, { openaiStrictMode: true }) : undefined,
+        parameters: this.schema.schema ? zodToJsonSchema(this.schema.schema, { target: 'openApi3' }) : undefined,
       },
     };
   }

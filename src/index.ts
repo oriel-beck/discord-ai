@@ -40,6 +40,7 @@ client.on(Events.MessageCreate, async message => {
       message.channel.type === ChannelType.GuildVoice
     )
       return message.reply('I cannot start a thread in this channel');
+
     const thread = await message.channel.threads.create({
       startMessage: message,
       name: 'Assistant',
@@ -58,6 +59,7 @@ client.on(Events.MessageCreate, async message => {
     collector.on('collect', async m => {
       if (!m.content) return m.reply('You need to tell me what to do');
 
+      if (discordAi.currentlyProccessing.has(thread.id)) return m.reply("Please wait, I'm still processing your older request...");
       await chat(m, m.content, 'thread');
     });
     collector.on('end', () => {

@@ -5,6 +5,7 @@ import OpenAI from 'openai';
 import { join } from 'path';
 import { Tool } from './tool.js';
 import { ToolArguments } from './types.js';
+import { inspect } from 'util';
 
 const MODEL: OpenAI.Chat.ChatModel = 'gpt-4o-mini';
 
@@ -15,7 +16,11 @@ interface ToolFile {
 
 export class DiscordAI {
   private readonly openai: OpenAI;
+  /**
+   * TMP Until I integrate a db
+   */
   public readonly messagesHistory = new SuperMap<string, OpenAI.Chat.Completions.ChatCompletionMessageParam[]>();
+  public readonly currentlyProccessing = new Set<string>();
   private tools: ToolFile[] = [];
 
   constructor(
@@ -41,18 +46,21 @@ export class DiscordAI {
   }
 
   async handleConversationInThreads(message: Message, query: string) {
-    return this.processConversation(message, query, message.channel.id);
+    this.currentlyProccessing.add(message.channel.id);
+    const result = await this.processConversation(message, query, message.channel.id);
+    this.currentlyProccessing.delete(message.channel.id);
+    return result;
   }
 
   async handleConversationInChannels(message: Message, query: string, aiReplyMessageId: string) {
     const key = message.reference?.messageId || aiReplyMessageId;
-    return this.processConversation(message, query, key);
+    return await this.processConversation(message, query, key, aiReplyMessageId);
   }
 
-  private async processConversation(message: Message, query: string, key: string) {
-    const messages = await this.getMessages(message, query, key);
+  private async processConversation(message: Message, query: string, originKey: string, savingKey?: string) {
+    const messages = await this.getMessages(message, query, originKey);
     const updatedMessages = await this.handleConversation(messages, message);
-    this.messagesHistory.set(key, updatedMessages);
+    this.messagesHistory.set(savingKey || originKey, updatedMessages);
     return updatedMessages.at(-1);
   }
 
@@ -105,6 +113,8 @@ export class DiscordAI {
           }
         })
       );
+      // console.log(inspect(aiMessage.tool_calls, false, 999));
+      // console.log(inspect(tasks, false, 999));
 
       // Append all tool results (order doesn't matter due to call.id)
       messages.push(...tasks);
