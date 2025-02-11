@@ -1,92 +1,61 @@
+import tool from '../../tool.js';
 import { PermissionsString } from 'discord.js';
-import OpenAI from 'openai';
-import { ToolFunction } from '../../types.js';
+import { array, boolean, object, optional, string } from 'zod';
+import { discordIdSchema } from '../../constants.js';
+import { ToolArguments } from '../../types.js';
 
-const editMember: ToolFunction<{
-  memberId: string;
-  nickname?: string;
-  mute?: boolean;
-  deaf?: boolean;
-  timeout?: string;
-  roles?: string[];
-}> = async ({ guild, memberId, nickname, mute, deaf, timeout, roles, member }) => {
-  if (mute !== undefined && !member.permissions.has('MuteMembers')) return { error: `${member.id} does not have permissions to mute members` };
-  if (deaf !== undefined && !member.permissions.has('DeafenMembers')) return { error: `${member.id} does not have permissions to deafen members` };
-  if (nickname !== undefined && !member.permissions.has('ManageNicknames')) return { error: `${member.id} does not have permissions to change nicknames` };
-  if (roles !== undefined && !member.permissions.has('ManageRoles')) return { error: `${member.id} does not have permissions to manage roles` };
-  if (timeout !== undefined && !member.permissions.has('ModerateMembers')) return { error: `${member.id} does not have permissions to moderate members` };
-
-  try {
-    const guildMember = await guild.members.fetch(memberId);
-
-    if (guildMember.roles.highest.position >= member.roles.highest.position)
-      return {
-        error: `${member.id} cannot manage ${guildMember.id} as ${guildMember.id}'s highest role position is higher or equal to ${member.id}'s highest role position`,
-      };
-
-    const me = await guild.members.fetchMe();
-    if (guildMember.roles.highest.position >= me.roles.highest.position) {
-      return {
-        error: `The bot cannot manage ${guildMember.id} as ${guildMember.id}'s highest role position is higher or equal to the bot's`,
-      };
-    }
-
-    await guildMember.edit({
-      nick: nickname,
-      mute: mute,
-      deaf: deaf,
-      roles,
-      communicationDisabledUntil: timeout ? new Date(timeout) : undefined,
-    });
-    return { data: `Edited ${guildMember.id}` };
-  } catch (err) {
-    return { error: `Failed to edit ${memberId}: ${(err as Error).message}` };
-  }
-};
+const schema = object({
+  memberId: discordIdSchema(),
+  nickname: optional(string().max(32, 'Nickname can only be up to 32 characters')).describe("The new nickname for 'memberId'"),
+  mute: optional(boolean()).describe("Wether to mute 'memberId'"),
+  deaf: optional(boolean()).describe("Wether to deafen 'memberId'"),
+  timeout: optional(string().time()).describe("The time when 'memberId' should be able to talk again"),
+  roles: optional(array(discordIdSchema())).describe(
+    'The roles to SET to the member, removing all other roles, can be provided as an empty array to remove all roles'
+  ),
+}).strict();
 
 export const permissions: PermissionsString[] = ['ModerateMembers', 'MuteMembers', 'DeafenMembers', 'ManageRoles', 'ManageNicknames'];
 
-export const definition: OpenAI.Chat.Completions.ChatCompletionTool = {
-  type: 'function',
-  function: {
-    name: 'edit_member',
-    description: 'Edit a discord member nickname, mute them, deafen them, or time them out.',
-    parameters: {
-      type: 'object',
-      required: ['memberId'],
-      additionalProperties: false,
-      properties: {
-        memberId: {
-          type: 'string',
-          description: 'The member Id of the user to edit.',
-        },
-        nickname: {
-          type: 'string',
-          description: 'The nickname to set to the user. Empty string to reset. Requires ManageNicknames permission.',
-        },
-        mute: {
-          type: 'boolean',
-          description: 'If the user should be muted. Requires MuteMembers permission.',
-        },
-        deaf: {
-          type: 'boolean',
-          description: 'If the user should be deafened. Requires DeafenMembers permission.',
-        },
-        timeout: {
-          type: 'string',
-          description: 'The timeout end time as an ISO timestamp. Use get_current_date_time to get the current time. Requires ModerateMembers permission.',
-        },
-        roles: {
-          type: 'array',
-          description: 'The list of arrays to set for the users, this overrides all existing roles on the user. Requires ManageRoles permissions.',
-          items: {
-            type: 'string',
-            description: 'The role Id to set to the user',
-          },
-        },
-      },
-    },
-  },
-};
+export default ({ guild, member }: ToolArguments) =>
+  tool(
+    async ({ memberId, nickname, mute, deaf, timeout, roles }) => {
+      if (mute !== undefined && !member.permissions.has('MuteMembers')) return { error: `${member.id} does not have permissions to mute members` };
+      if (deaf !== undefined && !member.permissions.has('DeafenMembers')) return { error: `${member.id} does not have permissions to deafen members` };
+      if (nickname !== undefined && !member.permissions.has('ManageNicknames')) return { error: `${member.id} does not have permissions to change nicknames` };
+      if (roles !== undefined && !member.permissions.has('ManageRoles')) return { error: `${member.id} does not have permissions to manage roles` };
+      if (timeout !== undefined && !member.permissions.has('ModerateMembers')) return { error: `${member.id} does not have permissions to moderate members` };
 
-export default editMember;
+      try {
+        const guildMember = await guild.members.fetch(memberId);
+
+        if (guildMember.roles.highest.position >= member.roles.highest.position)
+          return {
+            error: `${member.id} cannot manage ${guildMember.id} as ${guildMember.id}'s highest role position is higher or equal to ${member.id}'s highest role position`,
+          };
+
+        const me = await guild.members.fetchMe();
+        if (guildMember.roles.highest.position >= me.roles.highest.position) {
+          return {
+            error: `The bot cannot manage ${guildMember.id} as ${guildMember.id}'s highest role position is higher or equal to the bot's`,
+          };
+        }
+
+        await guildMember.edit({
+          nick: nickname,
+          mute: mute,
+          deaf: deaf,
+          roles,
+          communicationDisabledUntil: timeout ? new Date(timeout) : undefined,
+        });
+        return { data: `Edited ${guildMember.id}` };
+      } catch (err) {
+        return { error: `Failed to edit ${memberId}: ${(err as Error).message}` };
+      }
+    },
+    {
+      name: 'edit_member',
+      description: 'Edit a discord member nickname, mute them, deafen them, time them out, or set their roles. Can be used together',
+      schema,
+    }
+  );

@@ -1,28 +1,26 @@
-import { ColorResolvable, EmbedBuilder, GuildTextBasedChannel } from 'discord.js';
+import { ZodObject, ZodObjectDef } from 'zod';
 
-const severityColors: Record<Severity, ColorResolvable> = {
-  info: '#3498DB',
-  warning: '#F1C40F',
-  moderate: '#E67E22',
-  severe: '#E74C3C',
-  success: '#2ECC71',
-};
+/**
+ * Recursively removes `minLength` from a Zod schema converted to JSON Schema
+ * @param schema - The JSON schema object
+ * @returns The cleaned schema without `minLength`
+ */
+export function cleanSchema(schema: ZodObjectDef) {
+  if (typeof schema !== 'object' || schema === null) return schema;
 
-export type Severity = 'info' | 'warning' | 'moderate' | 'severe' | 'success';
+  // Create a copy to avoid mutating the original schema
+  const cleanedSchema = schema instanceof ZodObject ? (schema as any) : schema.shape();
 
-export async function sendAudit(channel: GuildTextBasedChannel, action: string, executor: string, message: string, severity: Severity) {
-  const embed = new EmbedBuilder({
-    title: action,
-    description: message,
-    fields: [
-      {
-        name: 'Executed by',
-        value: `<@${executor}> (${executor})`,
-      },
-    ],
-  }).setColor(severityColors[severity]);
-  
-  return await channel.send({
-    embeds: [embed],
-  });
+  if ('minLength' in cleanedSchema) {
+    delete cleanedSchema.minLength; // Remove the minLength property
+  }
+
+  // Recursively clean nested objects (e.g., properties)
+  if (cleanedSchema.properties) {
+    for (const key in cleanedSchema.properties) {
+      cleanedSchema.properties[key] = cleanSchema(cleanedSchema.properties[key]);
+    }
+  }
+
+  return cleanedSchema;
 }

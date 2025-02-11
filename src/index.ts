@@ -2,13 +2,10 @@ import { ChannelType, Client, Colors, Events, GatewayIntentBits, Message } from 
 import { config } from 'dotenv';
 import { join } from 'path';
 import { DiscordAI } from './ai/index.js';
-import { DiscordAIV2 } from './ai-v2/index.js';
-import { AIMessage } from '@langchain/core/messages';
 
 config();
 
 const discordAi = new DiscordAI(process.env.OPEN_AI_API_KEY!, join(import.meta.dirname, 'ai', 'tools'));
-const discordAiV2 = new DiscordAIV2(process.env.OPEN_AI_API_KEY!, join(import.meta.dirname, 'ai-v2', 'tools'));
 
 const managerRole = '1334178594494091364';
 const allowedGuild = '1334178302356619335';
@@ -27,14 +24,14 @@ client.on(Events.MessageCreate, async message => {
   const split = message.content.split(' ');
 
   if (message.reference?.messageId && discordAi.messagesHistory.get(message.reference.messageId)) {
-    await chat(message, message.content, 'message');
+    await chat(message, message.content, 'channel');
   } else if (split[0] === '+chat') {
     if (!split[1]) return message.reply('You need to tell me what to do');
 
     const query = split.splice(1).join(' ');
     console.log('Incoming message:', query);
 
-    await chat(message, query, 'message');
+    await chat(message, query, 'channel');
   } else if (split[0] === '+thread') {
     if (
       message.channel.type === ChannelType.DM ||
@@ -68,11 +65,6 @@ client.on(Events.MessageCreate, async message => {
       thread.setArchived(true);
       thread.setLocked(true);
     });
-  } else if (split[0] === '+test') {
-    const query = split.splice(1).join(' ');
-
-    const t = await discordAiV2.handleConversation(message, query);
-    message.reply((t.at(-1) as AIMessage).content.toString() || "No response")
   }
 });
 
@@ -80,36 +72,25 @@ client.login(process.env.BOT_TOKEN);
 
 const execString = (startTime: number) => `Execution took ${((new Date().getTime() - startTime) / 1000).toFixed(2)}s`;
 
-async function chat(message: Message, query: string, type: 'thread' | 'message') {
+async function chat(message: Message, query: string, type: 'channel' | 'thread') {
   const startTime = new Date().getTime();
   const waitingMessage = await message.reply('Executing for 0s...');
   const interval = setInterval(() => {
     waitingMessage.edit(`Executing for ${((new Date().getTime() - startTime) / 1000).toFixed(2)}s...`);
   }, 3000);
 
-  const me = await message.guild?.members.fetchMe();
-
   try {
     const res =
-      type === 'message'
-        ? await discordAi.handleConversationInChannels(
-            message,
-            query,
-            waitingMessage.id,
-            `You were executed in the server ${message.guildId}\nChannel: ${message.channelId}\nExecutor user ID (aka me): ${message.author.id}\nExecutor name (aka me): ${message.author.username}. You cannot add, remove, edit, or delete roles which have 'position' which is higher than your highest role position, which is ${me?.roles.highest.position}`
-          )
-        : await discordAi.handleConversationInThreads(
-            message,
-            query,
-            `You were executed in the server ${message.guildId}\nChannel: ${message.channelId}\nExecutor user ID (aka me): ${message.author.id}\nExecutor name (aka me): ${message.author.username}. You cannot add, remove, edit, or delete roles which have 'position' which is higher than your highest role position, which is ${me?.roles.highest.position}`
-          );
+      type === 'channel'
+        ? await discordAi.handleConversationInChannels(message, query, waitingMessage.id)
+        : await discordAi.handleConversationInThreads(message, query);
     clearInterval(interval);
-    if (res)
+    if (res?.content)
       waitingMessage.edit({
         content: execString(startTime),
         embeds: [
           {
-            description: `${res}`,
+            description: `${res?.content}`,
             color: Colors.Blurple,
             title: 'AI Response',
           },
@@ -127,6 +108,7 @@ async function chat(message: Message, query: string, type: 'thread' | 'message')
         ],
       });
   } catch (err) {
+    console.log(err);
     clearInterval(interval);
     const errMessage = (err as Error).message;
     waitingMessage.edit({

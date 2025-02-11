@@ -18,13 +18,11 @@
     "typescript": "^5.7.3"
   },
   "dependencies": {
-    "@langchain/core": "^0.3.39",
-    "@langchain/openai": "^0.4.3",
     "@thunder04/supermap": "^3.0.4",
     "discord.js": "^14.17.3",
     "dotenv": "^16.4.7",
-    "groq-sdk": "^0.13.0",
     "openai": "^4.82.0",
+    "openai-zod-to-json-schema": "^1.0.3",
     "zod": "^3.24.1"
   }
 }

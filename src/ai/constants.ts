@@ -1,3 +1,16 @@
+import { array, boolean, object, optional, string } from 'zod';
+
+export const errors = {
+  validDiscordId: 'A discord ID is between 17 and 20 characters',
+};
+
+export const discordIdSchema = () =>
+  string()
+    .regex(/\d{17,20}/)
+    .describe('A valid discord ID, 17-20 characters long, only numbers');
+
+export const hexRegex = /#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})/;
+
 export const PermissionsEnum = [
   'CreateInstantInvite',
   'KickMembers',
@@ -51,118 +64,48 @@ export const PermissionsEnum = [
   'UseExternalApps',
 ] as const;
 
-export const validateStringArray = (arr: unknown): arr is string[] => Array.isArray(arr) && arr.every(item => typeof item === 'string');
-
-export const embedDefinition = {
-  type: 'array',
-  items: {
-    type: 'object',
-    additionalProperties: false,
-    required: ['title', 'description', 'url', 'timestamp', 'color', 'footer', 'image', 'thumbnail', 'author', 'fields'],
-    properties: {
-      title: {
-        type: 'string',
-        description: 'Title of the embed (256 characters limit)',
-      },
-      description: {
-        type: 'string',
-        description: 'Description of the embed (4096 characters limit)',
-      },
-      url: {
-        type: 'string',
-        description: 'URL of the embed',
-      },
-      timestamp: {
-        type: 'string',
-        description: 'Timestamp of the embed content',
-      },
-      color: {
-        type: 'number',
-        description: 'Color code of the embed',
-      },
-      footer: {
-        type: 'object',
-        description: 'Footer information',
-        required: ['text', 'icon_url'],
-        additionalProperties: false,
-        properties: {
-          text: {
-            type: 'string',
-            description: 'Footer text (2048 characters limit)',
-          },
-          icon_url: {
-            type: ['string', 'null'],
-            description: 'URL of footer icon',
-          },
-        },
-      },
-      image: {
-        type: 'object',
-        description: 'Image information',
-        required: ['url'],
-        additionalProperties: false,
-        properties: {
-          url: {
-            type: 'string',
-            description: 'URL of the image',
-          },
-        },
-      },
-      thumbnail: {
-        type: 'object',
-        required: ['url'],
-        description: 'Thumbnail information',
-        additionalProperties: false,
-        properties: {
-          url: {
-            type: 'string',
-            description: 'URL of the thumbnail',
-          },
-        },
-      },
-      author: {
-        type: 'object',
-        required: ['name', 'url', 'icon_url'],
-        description: 'Author information',
-        additionalProperties: false,
-        properties: {
-          name: {
-            type: 'string',
-            description: 'Name of the author (256 characters limit)',
-          },
-          url: {
-            type: ['string', 'null'],
-            description: 'URL of the author',
-          },
-          icon_url: {
-            type: ['string', 'null'],
-            description: 'URL of author icon',
-          },
-        },
-      },
-      fields: {
-        type: 'array',
-        description: 'Fields information (only up to 25 fields)',
-        items: {
-          type: 'object',
-          required: ['name', 'value', 'inline'],
-          additionalProperties: false,
-          properties: {
-            name: {
-              type: 'string',
-              description: 'Field name (256 characters limit)',
-            },
-            value: {
-              type: 'string',
-              description: 'Field value (1024 characters limit)',
-            },
-            inline: {
-              type: ['boolean', 'null'],
-              description: 'Whether the field is inline',
-            },
-          },
-        },
-      },
-    },
-  },
-};
+export const embedsSchema = () => array(
+  object({
+    title: optional(string().max(256, 'Embed title can only be up to 100 characters long')),
+    description: optional(string().max(4096, 'Embed description can only be up to 4096 characters long')),
+    url: optional(string().url('url must be a valid URL')),
+    timestamp: optional(string().time()),
+    color: optional(
+      string()
+        .regex(hexRegex)
+        .transform(str => parseInt(str, 16))
+    ),
+    footer: optional(
+      object({
+        text: string().max(2048, 'Embed footer text can only be up to 2048 characters'),
+        icon_url: optional(string().url('Embed footer icon_url must be a valid URL')),
+      }).strict()
+    ),
+    image: optional(
+      object({
+        url: string().url('Embed image url must be a valid URL'),
+      }).strict()
+    ),
+    thumbnail: optional(
+      object({
+        url: string().url('Embed thumbnail url must be a valid URL'),
+      }).strict()
+    ),
+    author: optional(
+      object({
+        name: string().max(256, 'Embed author name can only be up to 256 characters'),
+        url: optional(string().url('Embed author url must be a valid URL')),
+        icon_url: optional(string().url('Embed author icon_url must be a valid URL')),
+      }).strict()
+    ),
+    fields: optional(
+      array(
+        object({
+          name: string().max(256, 'Embed field name can only be up to 256 characters'),
+          value: string().max(1024, 'Embed field value can only be up to 1024 characters'),
+          inline: optional(boolean()).describe('Wether the field should be inline'),
+        }).strict()
+      )
+    ),
+  }).strict()
+);
