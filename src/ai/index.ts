@@ -93,7 +93,12 @@ export class DiscordAI {
         aiMessage.tool_calls.map(async call => {
           try {
             const tool = tools[call.function.name];
-            if (!tool) throw new Error(`Tool "${call.function.name}" not found`);
+            if (!tool)
+              return {
+                content: `Tool "${call.function.name}" not found`,
+                tool_call_id: call.id,
+                role: 'tool',
+              } as OpenAI.Chat.Completions.ChatCompletionMessageParam;
 
             const result = await tool.invoke(call.function.arguments);
             return {
