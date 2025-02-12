@@ -2,6 +2,7 @@ import { array, object } from 'zod';
 import { discordIdSchema } from '../../constants.js';
 import tool from '../../tool.js';
 import { ToolArguments, ToolResult } from '../../types.js';
+import { handleTasks } from '../../util.js';
 
 const schema = object({
   roles: array(
@@ -62,22 +63,7 @@ export default ({ guild, member }: ToolArguments) => {
         }
       });
 
-      const tasks = await Promise.allSettled(promises);
-
-      const addedRoles: string[] = [];
-      const errors: string[] = [];
-      const res: ToolResult = {};
-      for (const task of tasks) {
-        if (task.status === 'fulfilled') {
-          addedRoles.push(task.value);
-        } else {
-          errors.push(task.reason);
-        }
-      }
-
-      if (errors.length) res.error = errors.join('\n');
-      if (addedRoles.length) res.data = addedRoles.join('\n');
-      return res;
+      return await handleTasks(promises);
     },
     {
       name: 'remove_roles',

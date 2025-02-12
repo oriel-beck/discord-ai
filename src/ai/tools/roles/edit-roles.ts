@@ -3,6 +3,7 @@ import { array, object, optional, string, z } from 'zod';
 import { discordIdSchema, hexRegex, PermissionsEnum } from '../../constants.js';
 import tool from '../../tool.js';
 import { ToolArguments } from '../../types.js';
+import { handleTasks } from '../../util.js';
 
 const schema = object({
   roles: array(
@@ -54,22 +55,7 @@ export default ({ guild, member }: ToolArguments) =>
         }
       });
 
-      const tasks = await Promise.allSettled(promises);
-
-      const editedRoles: string[] = [];
-      const errors: string[] = [];
-      for (const task of tasks) {
-        if (task.status === 'fulfilled') {
-          editedRoles.push(task.value);
-        } else {
-          errors.push(task.reason);
-        }
-      }
-
-      return {
-        data: editedRoles.length ? editedRoles.join('\n') : undefined,
-        error: errors.length ? errors.join('\n') : undefined,
-      };
+      return await handleTasks(promises);
     },
     {
       name: 'edit_roles',

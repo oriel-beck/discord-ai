@@ -2,6 +2,7 @@ import { array, object } from 'zod';
 import { discordIdSchema } from '../../constants.js';
 import tool from '../../tool.js';
 import { ToolArguments } from '../../types.js';
+import { handleTasks } from '../../util.js';
 
 const schema = object({
   roleIds: array(discordIdSchema()).describe('An array of roles to delete'),
@@ -37,22 +38,7 @@ export default ({ guild, member }: ToolArguments) =>
         }
       });
 
-      const tasks = await Promise.allSettled(promises);
-
-      const deletedRoles: string[] = [];
-      const errors: string[] = [];
-      for (const task of tasks) {
-        if (task.status === 'fulfilled') {
-          deletedRoles.push(task.value);
-        } else {
-          errors.push(task.reason);
-        }
-      }
-
-      return {
-        data: deletedRoles.length ? `Deleted the roles ${deletedRoles.join(', ')}` : undefined,
-        error: errors.length ? errors.join('\n') : undefined,
-      };
+      return await handleTasks(promises);
     },
     {
       name: 'delete_roles',
