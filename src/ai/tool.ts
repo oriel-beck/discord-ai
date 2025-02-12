@@ -37,7 +37,9 @@ export class Tool<T extends ZodObjectAny = any> {
       return await this.func(parsedArgs);
     } catch (error) {
       console.error(error);
-      return { error: `Tool execution failed: ${error instanceof Error ? error.message : String(error)}` };
+      return {
+        error: `Tool execution failed: ${error instanceof Error ? error.message : String(error)}\nYou can try re-running this tool after correcting the arguments`,
+      };
     }
   }
 }
