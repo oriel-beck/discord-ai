@@ -1,7 +1,7 @@
-import tool from '../../tool.js';
-import { array, nullable, object, optional, string } from 'zod';
-import { ToolArguments } from '../../types.js';
+import { array, nullable, object, string } from 'zod';
 import { discordIdSchema } from '../../constants.js';
+import tool from '../../tool.js';
+import type { ToolArguments } from '../../types.js';
 import { handleTasks } from '../../util.js';
 
 const schema = object({

@@ -1,8 +1,8 @@
-import { ColorResolvable } from 'discord.js';
+import type { ColorResolvable } from 'discord.js';
 import { array, object, optional, string, z } from 'zod';
 import { hexRegex, PermissionsEnum } from '../../constants.js';
 import tool from '../../tool.js';
-import { ToolArguments } from '../../types.js';
+import type { ToolArguments } from '../../types.js';
 import { handleTasks } from '../../util.js';
 
 const schema = object({

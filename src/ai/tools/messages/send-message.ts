@@ -1,7 +1,7 @@
 import { object, optional, string } from 'zod';
 import { discordIdSchema, embedsSchema } from '../../constants.js';
 import tool from '../../tool.js';
-import { ToolArguments } from '../../types.js';
+import type { ToolArguments } from '../../types.js';
 
 const schema = object({
   embeds: optional(embedsSchema()),

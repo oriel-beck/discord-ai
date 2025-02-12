@@ -1,7 +1,7 @@
 import { object, optional, string } from 'zod';
 import { discordIdSchema, embedsSchema } from '../../constants.js';
 import tool from '../../tool.js';
-import { ToolArguments } from '../../types.js';
+import type { ToolArguments } from '../../types.js';
 
 const schema = object({
   embeds: optional(embedsSchema()),
@@ -43,6 +43,6 @@ export default ({ guild, channel, member }: ToolArguments) =>
       description:
         'Edit a message in the current Discord channel or a target Discord channel, the message can contain content (plain text) alongside multiple embeds. Should only be used if the executor requested it.',
       schema,
-      permissions: ['ManageGuild']
+      permissions: ['ManageGuild'],
     }
   );

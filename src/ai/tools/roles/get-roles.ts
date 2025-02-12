@@ -1,5 +1,5 @@
 import tool from '../../tool.js';
-import { ToolArguments } from '../../types.js';
+import type { ToolArguments } from '../../types.js';
 
 export default ({ guild }: ToolArguments) =>
   tool(

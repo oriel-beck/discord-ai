@@ -1,6 +1,6 @@
-import tool from '../../tool.js';
 import { object, string } from 'zod';
-import { ToolArguments } from '../../types.js';
+import tool from '../../tool.js';
+import type { ToolArguments } from '../../types.js';
 
 const schema = object({
   username: string(),

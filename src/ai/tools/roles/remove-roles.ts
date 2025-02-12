@@ -1,7 +1,7 @@
 import { array, object } from 'zod';
 import { discordIdSchema } from '../../constants.js';
 import tool from '../../tool.js';
-import { ToolArguments, ToolResult } from '../../types.js';
+import type { ToolArguments } from '../../types.js';
 import { handleTasks } from '../../util.js';
 
 const schema = object({

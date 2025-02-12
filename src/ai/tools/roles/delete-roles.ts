@@ -1,7 +1,7 @@
 import { array, object } from 'zod';
 import { discordIdSchema } from '../../constants.js';
 import tool from '../../tool.js';
-import { ToolArguments } from '../../types.js';
+import type { ToolArguments } from '../../types.js';
 import { handleTasks } from '../../util.js';
 
 const schema = object({
@@ -44,6 +44,6 @@ export default ({ guild, member }: ToolArguments) =>
       name: 'delete_roles',
       description: 'Deletes multiple Discord roles',
       schema,
-      permissions: ['ManageRoles']
+      permissions: ['ManageRoles'],
     }
   );

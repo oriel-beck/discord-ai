@@ -1,7 +1,7 @@
 import { array, object } from 'zod';
 import { discordIdSchema } from '../../constants.js';
 import tool from '../../tool.js';
-import { ToolArguments } from '../../types.js';
+import type { ToolArguments } from '../../types.js';
 
 const schema = object({
   channelIds: array(discordIdSchema()),
@@ -54,6 +54,6 @@ export default ({ guild, member }: ToolArguments) =>
       name: 'delete_channels',
       description: 'Deletes multiple Discord channels',
       schema,
-      permissions: ['ManageChannels']
+      permissions: ['ManageChannels'],
     }
   );

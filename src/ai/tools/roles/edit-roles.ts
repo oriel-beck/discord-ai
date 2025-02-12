@@ -1,17 +1,15 @@
-import { ColorResolvable } from 'discord.js';
+import type { ColorResolvable } from 'discord.js';
 import { array, object, optional, string, z } from 'zod';
 import { discordIdSchema, hexRegex, PermissionsEnum } from '../../constants.js';
 import tool from '../../tool.js';
-import { ToolArguments } from '../../types.js';
+import type { ToolArguments } from '../../types.js';
 import { handleTasks } from '../../util.js';
 
 const schema = object({
   roles: array(
     object({
       roleName: optional(string().max(100)).describe('The name for the role'),
-      roleColor: optional(string().regex(hexRegex, 'roleColor must be a valid hex code (#XXXXXX)')).describe(
-        'The color to give the role, in hex format'
-      ),
+      roleColor: optional(string().regex(hexRegex, 'roleColor must be a valid hex code (#XXXXXX)')).describe('The color to give the role, in hex format'),
       roleId: discordIdSchema(),
       rolePermissions: optional(z.enum(PermissionsEnum)).describe('The permissions the role should have as an array of permission names'),
     }).strict()
@@ -47,7 +45,7 @@ export default ({ guild, member }: ToolArguments) =>
             name: roleName || undefined,
             color: (roleColor as ColorResolvable) || undefined,
             permissions: rolePermissions || [],
-            reason: `Requested by ${member.user.username} (${member.user.id})`
+            reason: `Requested by ${member.user.username} (${member.user.id})`,
           });
           return `Edited ${role.id}: ${JSON.stringify(role.toJSON())}`;
         } catch (err) {
@@ -61,6 +59,6 @@ export default ({ guild, member }: ToolArguments) =>
       name: 'edit_roles',
       description: 'Edits multiple Discord roles',
       schema,
-      permissions: ['ManageRoles']
+      permissions: ['ManageRoles'],
     }
   );

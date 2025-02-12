@@ -1,7 +1,7 @@
 import { object, optional } from 'zod';
 import { discordIdSchema } from '../../constants.js';
 import tool from '../../tool.js';
-import { ToolArguments } from '../../types.js';
+import type { ToolArguments } from '../../types.js';
 
 const schema = object({
   channelId: optional(discordIdSchema()).describe('The channel ID to get the message from'),
@@ -30,6 +30,6 @@ export default ({ channel, guild }: ToolArguments) =>
       name: 'get_message',
       description: 'Gets a message in the current Discord channel or a target Discord channel.',
       schema,
-      permissions: ['ManageGuild']
+      permissions: ['ManageGuild'],
     }
   );
