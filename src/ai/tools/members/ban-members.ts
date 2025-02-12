@@ -20,7 +20,7 @@ export default ({ guild, member }: ToolArguments) =>
       // You can ban users too
       const promises = users.map(async ({ userId, deleteSeconds, reason }) => {
         reason ??= `Requested by ${member.user.username} (${member.user.id})`;
-        let target = await guild.members.fetch(userId).catch(() => null);
+        const target = await guild.members.fetch(userId).catch(() => null);
         if (target) {
           if (!target.bannable) throw `Unable to ban ${target.id}`;
           if (guild.ownerId === target.id) throw 'Cannot ban the server owner';
@@ -30,7 +30,7 @@ export default ({ guild, member }: ToolArguments) =>
           const me = await guild.members.fetchMe();
           if (me.roles.highest <= target.roles.highest) throw 'You cannot ban a member with higher permissions than you';
 
-          target = await target.ban({ deleteMessageSeconds: deleteSeconds, reason });
+          await target.ban({ deleteMessageSeconds: deleteSeconds, reason });
         } else {
           await guild.bans.create(userId, { deleteMessageSeconds: deleteSeconds, reason });
         }

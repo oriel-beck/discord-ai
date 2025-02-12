@@ -18,8 +18,8 @@ export default ({ guild, member }: ToolArguments) =>
     async ({ members }) => {
       const promises = members.map(async ({ memberId, reason }) => {
         reason ??= `Requested by ${member.user.username} (${member.user.id})`;
-        let target = await guild.members.fetch(memberId);
-        if (!target?.kickable) return { error: `Unable to kick ${target.id}` };
+        const target = await guild.members.fetch(memberId);
+        if (!target.kickable) return { error: `Unable to kick ${target.id}` };
         if (guild.ownerId === target.id) return { error: 'Cannot kick the server owner' };
         if (guild.ownerId !== target.id && member.roles.highest <= target.roles.highest)
           return { error: 'The executor cannot kick a member with higher permissions than them' };
@@ -27,7 +27,7 @@ export default ({ guild, member }: ToolArguments) =>
         const me = await guild.members.fetchMe();
         if (me.roles.highest <= target.roles.highest) return { error: 'You cannot kick a member with higher permissions than you' };
 
-        target = await target.ban({ reason });
+        await target.ban({ reason });
       });
 
       return await handleTasks(promises);
