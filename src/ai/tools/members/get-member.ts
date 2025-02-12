@@ -20,7 +20,7 @@ export default ({ guild }: ToolArguments) =>
       return { data: JSON.stringify({ ...member.toJSON()!, permissions: member.permissions.toArray() }) };
     },
     {
-      name: 'get_discord_member_by_username',
+      name: 'get_member_by_username',
       description: 'Gets a discord member by their username or nickname, used for getting any information about the member including their permissions.',
       schema,
     }

@@ -1,13 +1,9 @@
 import { array, boolean, object, optional, string } from 'zod';
 
-export const errors = {
-  validDiscordId: 'A discord ID is between 17 and 20 characters',
-};
-
 export const discordIdSchema = () =>
   string()
     .regex(/\d{17,20}/)
-    .describe('A valid discord ID, 17-20 characters long, only numbers');
+    .describe('A valid discord ID, 17-20 characters long, only numbers. If you need to find a user ID from a username/nickname you can use the get_member_by_username tool');
 
 export const hexRegex = /#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})/;
 

@@ -1,11 +1,11 @@
 import tool from '../../tool.js';
-import { object, optional, string } from 'zod';
+import { nullable, object, optional, string } from 'zod';
 import { ToolArguments } from '../../types.js';
 import { discordIdSchema } from '../../constants.js';
 
 const schema = object({
   userId: discordIdSchema(),
-  nickname: optional(string().max(32).min(1)).describe("New nickname or null to reset the userId's nickname"),
+  nickname: nullable(string().max(32).min(1)).describe("New nickname or null to reset the userId's nickname"),
 }).strict();
 
 export default ({ guild, member }: ToolArguments) =>
@@ -14,7 +14,11 @@ export default ({ guild, member }: ToolArguments) =>
       let target = await guild.members.fetch(userId);
       if (!target) return { error: `NotFound: ${userId}` };
       if (guild.ownerId === target.id) return { error: 'Cannot change the nickname of the server owner' };
-      if (member.roles.highest <= target.roles.highest) return { error: 'Cannot edit the nickname of a user with higher permissions than the executor' };
+      if (guild.ownerId !== target.id && member.roles.highest <= target.roles.highest)
+        return { error: 'The executor cannot edit the nickname of a member with higher permissions than them' };
+      
+      const me = await guild.members.fetchMe();
+      if (me.roles.highest <= target.roles.highest) return { error: 'You cannot edit a member with higher permissions than you' };
 
       target = await target.edit({ nick: nickname });
       return { data: `Edited ${userId} to ${target.nickname}` };
