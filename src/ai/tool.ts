@@ -28,7 +28,14 @@ export class Tool<T extends ZodObjectAny = any> {
   }
 
   async invoke(args: string) {
-    return await this.func(JSON.parse(args));
+    try {
+      if (!this.schema.schema) return await this.func(JSON.parse(args));
+      const parsedArgs = this.schema.schema.parse(JSON.parse(args));
+      return await this.func(parsedArgs);
+    } catch (error) {
+      console.error(error);
+      return { error: `Tool execution failed: ${error instanceof Error ? error.message : String(error)}` };
+    }
   }
 }
 
