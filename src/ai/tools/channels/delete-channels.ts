@@ -1,14 +1,11 @@
-import tool from '../../tool.js';
-import { PermissionsString } from 'discord.js';
 import { array, object } from 'zod';
 import { discordIdSchema } from '../../constants.js';
+import tool from '../../tool.js';
 import { ToolArguments } from '../../types.js';
 
 const schema = object({
   channelIds: array(discordIdSchema()),
 }).strict();
-
-export const permissions: PermissionsString[] = ['ManageChannels'];
 
 export default ({ guild, member }: ToolArguments) =>
   tool(
@@ -57,5 +54,6 @@ export default ({ guild, member }: ToolArguments) =>
       name: 'delete_channels',
       description: 'Deletes multiple Discord channels',
       schema,
+      permissions: ['ManageChannels']
     }
   );

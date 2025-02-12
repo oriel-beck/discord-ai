@@ -1,7 +1,6 @@
-import tool from '../../tool.js';
-import { PermissionsString } from 'discord.js';
 import { object, optional, string } from 'zod';
 import { discordIdSchema, embedsSchema } from '../../constants.js';
+import tool from '../../tool.js';
 import { ToolArguments } from '../../types.js';
 
 const schema = object({
@@ -9,8 +8,6 @@ const schema = object({
   content: optional(string().max(2000, 'Content cannot be more than 2000 characters long')),
   channelId: optional(discordIdSchema()),
 }).strict();
-
-export const permissions: PermissionsString[] = ['ManageGuild'];
 
 export default ({ guild, channel, member }: ToolArguments) =>
   tool(
@@ -42,5 +39,6 @@ export default ({ guild, channel, member }: ToolArguments) =>
       description:
         'Sends a message to the current Discord channel or a target Discord channel, the message can contain content (plain text) alongside multiple embeds. Should only be used if the executor requested it.',
       schema,
+      permissions: ['ManageGuild']
     }
   );

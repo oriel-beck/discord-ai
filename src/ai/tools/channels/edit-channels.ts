@@ -1,7 +1,7 @@
-import tool from '../../tool.js';
-import { ChannelType, GuildChannelEditOptions, PermissionsString } from 'discord.js';
+import { ChannelType, GuildChannelEditOptions } from 'discord.js';
 import { array, object, optional, string, z } from 'zod';
 import { discordIdSchema, PermissionsEnum } from '../../constants.js';
+import tool from '../../tool.js';
 import { ToolArguments } from '../../types.js';
 
 const schema = object({
@@ -23,8 +23,6 @@ const schema = object({
     })
   ),
 }).strict();
-
-export const permissions: PermissionsString[] = ['ManageChannels'];
 
 export default ({ guild, member }: ToolArguments) =>
   tool(
@@ -79,5 +77,6 @@ export default ({ guild, member }: ToolArguments) =>
       name: 'edit_channels',
       description: 'Edits multiple Discord channels',
       schema,
+      permissions: ['ManageChannels']
     }
   );

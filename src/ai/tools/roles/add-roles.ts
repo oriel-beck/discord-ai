@@ -1,7 +1,6 @@
-import tool from '../../tool.js';
-import { PermissionsString } from 'discord.js';
 import { array, object } from 'zod';
 import { discordIdSchema } from '../../constants.js';
+import tool from '../../tool.js';
 import { ToolArguments, ToolResult } from '../../types.js';
 
 const schema = object({
@@ -12,8 +11,6 @@ const schema = object({
     }).strict()
   ),
 }).strict();
-
-export const permissions: PermissionsString[] = ['ManageRoles'];
 
 export default ({ guild, member }: ToolArguments) =>
   tool(
@@ -84,5 +81,6 @@ export default ({ guild, member }: ToolArguments) =>
       description:
         'Adds one or more Discord roles to the specific member by using one or more role IDs and a user IDs in an array. Used to add one or multiple roles at a time to one or multiple users at a time, this should not be used more than once per userId.',
       schema,
+      permissions: ['ManageRoles']
     }
   );

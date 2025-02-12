@@ -5,13 +5,11 @@ import OpenAI from 'openai';
 import { join } from 'path';
 import { Tool } from './tool.js';
 import { ToolArguments } from './types.js';
-import { inspect } from 'util';
 
 const MODEL: OpenAI.Chat.ChatModel = 'gpt-4o-mini';
 
 interface ToolFile {
   default: (args: ToolArguments) => Tool;
-  permissions?: PermissionsString[];
 }
 
 export class DiscordAI {
@@ -155,16 +153,16 @@ export class DiscordAI {
   private getAvailableTools(message: Message) {
     return Object.fromEntries(
       this.tools
-        .filter(tool => !tool.permissions || message.member!.permissions.any(tool.permissions))
-        .map(tool => {
-          const instance = tool.default({
+        .map(tool =>
+          tool.default({
             member: message.member!,
             client: message.client,
             channel: message.channel as GuildTextBasedChannel,
             guild: message.guild!,
-          });
-          return [instance.definition.function.name, instance];
-        })
+          })
+        )
+        .filter(tool => !tool.permissions || message.member!.permissions.any(tool.permissions))
+        .map(instance => [instance.definition.function.name, instance])
     );
   }
 }

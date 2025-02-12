@@ -1,8 +1,8 @@
-import tool from '../../tool.js';
-import { ColorResolvable, PermissionsString } from 'discord.js';
+import { ColorResolvable } from 'discord.js';
 import { array, object, optional, string, z } from 'zod';
-import { ToolArguments } from '../../types.js';
 import { discordIdSchema, hexRegex, PermissionsEnum } from '../../constants.js';
+import tool from '../../tool.js';
+import { ToolArguments } from '../../types.js';
 
 const schema = object({
   roles: array(
@@ -16,8 +16,6 @@ const schema = object({
     }).strict()
   ),
 }).strict();
-
-export const permissions: PermissionsString[] = ['ManageRoles'];
 
 export default ({ guild, member }: ToolArguments) =>
   tool(
@@ -76,5 +74,6 @@ export default ({ guild, member }: ToolArguments) =>
       name: 'edit_roles',
       description: 'Edits multiple Discord roles',
       schema,
+      permissions: ['ManageRoles']
     }
   );

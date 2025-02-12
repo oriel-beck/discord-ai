@@ -1,7 +1,6 @@
-import tool from '../../tool.js';
-import { PermissionsString } from 'discord.js';
 import { array, object } from 'zod';
 import { discordIdSchema } from '../../constants.js';
+import tool from '../../tool.js';
 import { ToolArguments, ToolResult } from '../../types.js';
 
 const schema = object({
@@ -12,8 +11,6 @@ const schema = object({
     }).strict()
   ),
 }).strict();
-
-export const permissions: PermissionsString[] = ['ManageRoles'];
 
 export default ({ guild, member }: ToolArguments) => {
   return tool(
