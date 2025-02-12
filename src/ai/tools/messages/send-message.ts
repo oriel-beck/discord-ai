@@ -24,21 +24,17 @@ export default ({ guild, channel, member }: ToolArguments) =>
 
       if (!channel.permissionsFor(member).has('SendMessages')) return { error: `${member.id} does not have permissions to send messages in ${channelId}` };
 
-      try {
-        const sent = await channel.send({
-          content,
-          embeds,
-        });
-        return `Sent message ${JSON.stringify(sent.toJSON())}`;
-      } catch (err) {
-        return `Failed to send message: ${(err as Error).message}`;
-      }
+      const sent = await channel.send({
+        content,
+        embeds,
+      });
+      return `Sent message ${JSON.stringify(sent.toJSON())}`;
     },
     {
       name: 'send_message',
       description:
         'Sends a message to the current Discord channel or a target Discord channel, the message can contain content (plain text) alongside multiple embeds. Should only be used if the executor requested it.',
       schema,
-      permissions: ['ManageGuild']
+      permissions: ['ManageGuild'],
     }
   );
