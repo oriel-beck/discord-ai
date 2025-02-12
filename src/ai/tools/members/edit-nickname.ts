@@ -16,11 +16,11 @@ export default ({ guild, member }: ToolArguments) =>
       if (guild.ownerId === target.id) return { error: 'Cannot change the nickname of the server owner' };
       if (guild.ownerId !== target.id && member.roles.highest <= target.roles.highest)
         return { error: 'The executor cannot edit the nickname of a member with higher permissions than them' };
-      
+
       const me = await guild.members.fetchMe();
       if (me.roles.highest <= target.roles.highest) return { error: 'You cannot edit a member with higher permissions than you' };
 
-      target = await target.edit({ nick: nickname });
+      target = await target.edit({ nick: nickname, reason: `Requested by ${member.user.username} (${member.user.id})` });
       return { data: `Edited ${userId} to ${target.nickname}` };
     },
     {

@@ -52,7 +52,7 @@ export default ({ guild, member }: ToolArguments) =>
         const useableIds = (await Promise.allSettled(innerPromises)).reduce((acc, p) => (p.status === 'fulfilled' ? [...acc, p.value] : acc), [] as string[]);
 
         try {
-          await guildMember.roles.add(useableIds);
+          await guildMember.roles.add(useableIds, `Requested by ${member.user.username} (${member.user.id})`);
           return `Added ${useableIds.join(', ')} to ${roleSet.userId}.`;
         } catch (err) {
           throw `Failed ${roleSet.userId}: ${(err as Error).message}`;

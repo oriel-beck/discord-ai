@@ -46,6 +46,7 @@ export default ({ guild, member }: ToolArguments) =>
             name: roleName || undefined,
             color: (roleColor as ColorResolvable) || undefined,
             permissions: rolePermissions || [],
+            reason: `Requested by ${member.user.username} (${member.user.id})`
           });
           return `Edited ${role.id}: ${JSON.stringify(role.toJSON())}`;
         } catch (err) {

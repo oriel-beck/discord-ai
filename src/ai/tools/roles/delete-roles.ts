@@ -30,7 +30,7 @@ export default ({ guild, member }: ToolArguments) =>
         }
 
         try {
-          await guild.roles.delete(roleId);
+          await guild.roles.delete(roleId, `Requested by ${member.user.username} (${member.user.id})`);
           return roleId;
         } catch (err) {
           throw `Failed ${roleId}: ${(err as Error).message}`;
