@@ -1,0 +1,16 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model temprole {
+    userId    String 
+    roleId    String
+    guildId   String
+    expiresAt DateTime
+    @@id([userId, roleId, guildId])
+}

@@ -9,7 +9,7 @@ const schema = object({
     object({
       userId: discordIdSchema(),
       timeout: nullable(string().datetime()).describe(
-        'Until when to timeout this member as ISO timestamp, use the get_current_date_time function to get the current time to add onto it'
+        'Until when to timeout this member as ISO timestamp, use the get_current_date_time tool to get the current time to add onto it'
       ),
     }).strict()
   ),

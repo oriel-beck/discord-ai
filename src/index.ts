@@ -5,6 +5,7 @@ import { DiscordAI } from './ai/index.js';
 import { chat } from './utils/chat.js';
 import { thread } from './utils/thread.js';
 import loadSystemPrompt from './utils/load-system-prompt.js';
+import { listen } from './temprole/temprole-listener.js';
 
 config();
 await loadSystemPrompt(join(import.meta.dirname, 'system_prompt.txt'));
@@ -42,4 +43,5 @@ client.on(Events.MessageCreate, async message => {
   } else if (split[0] === '+thread') await thread(discordAi, message);
 });
 
+listen(client);
 client.login(process.env.BOT_TOKEN);
