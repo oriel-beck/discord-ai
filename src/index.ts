@@ -26,6 +26,7 @@ client.on(Events.MessageCreate, async message => {
   const split = message.content.split(' ');
 
   if (message.reference?.messageId && discordAi.messagesHistory.get(message.reference.messageId)) {
+    console.log('Incoming replied message:', message.content);
     await chat(discordAi, message, message.content, 'channel');
   } else if (split[0] === '+chat') {
     if (!split[1]) return message.reply('You need to tell me what to do');

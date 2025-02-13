@@ -27,6 +27,7 @@ export async function thread(discordAi: DiscordAI, message: Message) {
   collector.on('collect', async m => {
     if (!m.content) return m.reply('You need to tell me what to do');
 
+    console.log('Incoming thread message:', m.content);
     if (discordAi.currentlyProccessing.has(thread.id)) return m.reply("Please wait, I'm still processing your older request...");
     await chat(discordAi, m, m.content, 'thread');
   });
