@@ -20,18 +20,20 @@ export class DiscordAI {
   public readonly messagesHistory = new SuperMap<string, OpenAI.Chat.Completions.ChatCompletionMessageParam[]>();
   public readonly currentlyProccessing = new Set<string>();
   private tools: ToolFile[] = [];
+  private devMode = process.env.DEVELOPMENT === 'true';
 
   constructor(
     apiKey: string,
     toolFolderPath: string,
     private model = MODEL
   ) {
+    if (!apiKey) throw new Error('[DiscordAI]: Missing env OPEN_AI_API_KEY');
     this.openai = new OpenAI({ apiKey });
     this.init(toolFolderPath);
   }
 
   private async init(path: string) {
-    console.log(`DiscordAI: Loading tools from ${path}`);
+    console.log(`[DiscordAI]: Loading tools from ${path}`);
     const files = await getJsFiles(path);
     const imports = await Promise.allSettled(files.map(file => import(`file://${file}`)));
 
@@ -40,7 +42,7 @@ export class DiscordAI {
       .map(result => (result.status === 'fulfilled' ? (result.value as ToolFile) : null))
       .filter(Boolean) as ToolFile[];
 
-    console.log(`DiscordAI: Loaded ${this.tools.length} tools`);
+    console.log(`[DiscordAI]: Loaded ${this.tools.length} tools`);
   }
 
   async handleConversationInThreads(message: Message, query: string) {
@@ -79,11 +81,13 @@ export class DiscordAI {
       );
 
       const aiMessage = result.choices[0].message;
-      console.log(
-        `Discord Message [${message.id}]: ${
-          aiMessage.tool_calls?.length ? `Executing tools: ${aiMessage.tool_calls.map(t => t.function.name)}` : `Responding with: ${aiMessage.content}`
-        }`
-      );
+      if (this.devMode) {
+        console.log(
+          `Discord Message [${message.id}]: ${
+            aiMessage.tool_calls?.length ? `Executing tools: ${aiMessage.tool_calls.map(t => t.function.name)}` : `Responding with: ${aiMessage.content}`
+          }`
+        );
+      }
 
       messages.push(aiMessage);
       if (!aiMessage.tool_calls?.length) break;

@@ -1,0 +1,11 @@
+{
+    "watch": [
+        "src/**/*.ts",
+        "system_prompt.txt"
+    ],
+    "ext": "ts,json",
+    "exec": "tsc && copyfiles system_prompt.txt dist/ && node dist/index.js",
+    "ignore": [
+        "dist/**/*.js"
+    ]
+}
