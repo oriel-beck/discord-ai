@@ -5,7 +5,7 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "build": "tsc && copyfiles system_prompt.txt dist/",
+    "build": "rimraf dist && tsc && copyfiles system_prompt.txt dist/",
     "dev": "nodemon",
     "start": "node dist/index.js",
     "format": "prettier . --write"
@@ -17,6 +17,7 @@
     "copyfiles": "^2.4.1",
     "nodemon": "^3.1.9",
     "prettier": "^3.4.2",
+    "rimraf": "^6.0.1",
     "typescript": "^5.7.3"
   },
   "dependencies": {
