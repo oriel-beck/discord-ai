@@ -1,7 +1,7 @@
 import { Client, Events } from 'discord.js';
 import { fork } from 'child_process';
 import { TempRoleMessage } from './temproles-background.js';
-import { PrismaClient } from '@prisma/client';
+import { $Enums, PrismaClient } from '@prisma/client';
 
 const tempRolesService = fork('./dist/temprole/temproles-background.js');
 
@@ -12,14 +12,6 @@ export function listen(client: Client) {
   console.log('[TempRole]: Starting temprole background services');
   init = true;
   const prisma = new PrismaClient();
-
-  client.on(Events.GuildMemberUpdate, async (oldMember, newMember) => {
-    const removedRoles = oldMember.roles.cache.filter(role => !newMember.roles.cache.has(role.id));
-
-    for (const role of removedRoles.values()) {
-      removeTempRole(newMember.id, role.id, newMember.guild.id);
-    }
-  });
 
   client.once(Events.ClientReady, () => {
     scheduleRemovals();
@@ -40,19 +32,25 @@ export function listen(client: Client) {
   async function removeRole(message: TempRoleMessage) {
     // service requested a role removal
     if (message.type === 'removeTempRole') {
-      const { userId, roleId, guildId } = message;
+      const { userId, roleId, guildId, action } = message;
       try {
         const guild = await client.guilds.fetch(guildId);
         const member = await guild.members.fetch(userId);
-        if (member.roles.cache.has(roleId)) {
+        if (action === 'ADD') {
+          // if the action is to add the role and the user does not have the role, add it
+          if (!member.roles.cache.has(roleId)) {
+            member.roles.add(roleId);
+          }
+          // if the action is to remove the role and the user has the role, remove it
+        } else if (member.roles.cache.has(roleId)) {
           await member.roles.remove(roleId);
           console.log(`[TempRoles]: Removed temp role ${roleId} from ${userId}`);
         }
       } catch (error) {
         console.error(`[TempRoles]: Failed to remove temp role ${roleId} from ${userId}:`, error);
       } finally {
-        // confirm role removal was attempted to remove from db
-        removeTempRole(userId, roleId, guildId);
+        // regardless of what happened in the try, remove the scheduled role from the db
+        removeScheduledRole(userId, roleId, guildId, action);
       }
     }
   }
@@ -68,19 +66,19 @@ export function listen(client: Client) {
       },
     });
 
-    console.log(`[TempRole]: Scheduling ${upcomingExpiredRoles.length} roles for removal`);
+    console.log(`[TempRole]: Scheduling ${upcomingExpiredRoles.length} roles`);
 
-    for (const { userId, roleId, guildId, expiresAt } of upcomingExpiredRoles) {
+    for (const { userId, roleId, guildId, expiresAt, action } of upcomingExpiredRoles) {
       const remainingTime = expiresAt.getTime() - Date.now();
-      tempRolesService.send({ type: 'scheduleRoleRemoval', userId, roleId, guildId, durationMs: remainingTime });
+      tempRolesService.send({ type: 'scheduleRoleRemoval', userId, roleId, guildId, action, durationMs: remainingTime });
     }
   }
 }
 
-export function addTempRole(userId: string, roleId: string, guildId: string, durationMs: number) {
-  tempRolesService.send({ type: 'addTempRole', userId, roleId, guildId, durationMs });
+export function addScheduledRole(userId: string, roleId: string, guildId: string, action: $Enums.TemproleMode, durationMs: number) {
+  tempRolesService.send({ type: 'addTempRole', userId, roleId, guildId, action, durationMs });
 }
 
-export function removeTempRole(userId: string, roleId: string, guildId: string) {
-  tempRolesService.send({ type: 'removeTempRole', userId, roleId, guildId });
+export function removeScheduledRole(userId: string, roleId: string, guildId: string, action: $Enums.TemproleMode) {
+  tempRolesService.send({ type: 'removeTempRole', userId, roleId, guildId, action });
 }

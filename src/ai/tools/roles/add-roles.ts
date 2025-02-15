@@ -1,18 +1,14 @@
-import { array, object, optional, string } from 'zod';
+import { array, object } from 'zod';
 import { discordIdSchema } from '../../constants.js';
 import tool from '../../tool.js';
 import type { ToolArguments } from '../../types.js';
 import { handleTasks } from '../../util.js';
-import { addTempRole } from '../../../temprole/temprole-listener.js';
 
 const schema = object({
   roles: array(
     object({
       userId: discordIdSchema(),
       roleIds: array(discordIdSchema()).describe("The roles to add to the 'userId'").min(1),
-      timeout: optional(string().datetime()).describe(
-        'When to remove the roles from the user automatically (temprole). use the get_current_date_time tool to get the current time to add onto it'
-      ),
     }).strict()
   ),
 }).strict();
@@ -58,13 +54,6 @@ export default ({ guild, member }: ToolArguments) =>
 
         try {
           await guildMember.roles.add(useableIds, `Requested by ${member.user.username} (${member.user.id})`);
-          if (roleSet.timeout) {
-            console.log(roleSet.timeout);
-            console.log(new Date(roleSet.timeout!).getTime() - new Date().getTime())
-            useableIds.forEach(r => {
-              addTempRole(roleSet.userId, r, guild.id, new Date(roleSet.timeout!).getTime() - new Date().getTime());
-            });
-          }
           return `Added ${useableIds.join(', ')} to ${roleSet.userId}.`;
         } catch (err) {
           throw `Failed ${roleSet.userId}: ${(err as Error).message}`;

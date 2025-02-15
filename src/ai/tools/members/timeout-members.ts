@@ -8,9 +8,13 @@ const schema = object({
   members: array(
     object({
       userId: discordIdSchema(),
-      timeout: nullable(string().datetime()).describe(
-        'Until when to timeout this member as ISO timestamp, use the get_current_date_time tool to get the current time to add onto it'
-      ),
+      timeout: nullable(
+        string()
+          .datetime()
+          .refine(date => new Date(date) > new Date(), {
+            message: 'Date must be in the future, use `get_current_date_time` to get the current date to add onto',
+          })
+      ).describe('Until when to timeout this member as ISO timestamp, use the get_current_date_time tool to get the current time to add onto it'),
     }).strict()
   ),
 }).strict();

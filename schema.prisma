@@ -12,5 +12,11 @@ model temprole {
     roleId    String
     guildId   String
     expiresAt DateTime
-    @@id([userId, roleId, guildId])
+    action TemproleMode
+    @@id([userId, roleId, guildId, action])
+}
+
+enum TemproleMode {
+  ADD
+  REMOVE
 }
