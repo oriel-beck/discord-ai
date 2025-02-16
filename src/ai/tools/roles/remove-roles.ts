@@ -41,7 +41,7 @@ export default ({ guild, member }: ToolArguments) => {
             throw `Role ID ${roleId} cannot be found`;
           }
 
-          if (member.roles.highest.position <= role.position) {
+          if (guild.ownerId !== member.id && member.roles.highest.position <= role.position) {
             throw `${member.id} cannot remove ${roleId} as the role's position is higher or equal to their highest role`;
           }
 

@@ -1,4 +1,4 @@
-import { array, nullable, object, string } from 'zod';
+import { array, nullable, number, object } from 'zod';
 import { discordIdSchema } from '../../constants.js';
 import tool from '../../tool.js';
 import type { ToolArguments } from '../../types.js';
@@ -8,13 +8,7 @@ const schema = object({
   members: array(
     object({
       userId: discordIdSchema(),
-      timeout: nullable(
-        string()
-          .datetime()
-          .refine(date => new Date(date) > new Date(), {
-            message: 'Date must be in the future, use `get_current_date_time` to get the current date to add onto',
-          })
-      ).describe('Until when to timeout this member as ISO timestamp, use the get_current_date_time tool to get the current time to add onto it'),
+      howLong: nullable(number()).describe('For how long to timeout this member in seconds'),
     }).strict()
   ),
 }).strict();
@@ -22,13 +16,16 @@ const schema = object({
 export default ({ guild, member }: ToolArguments) =>
   tool(
     async ({ members }) => {
-      const promises = members.map(async ({ userId, timeout }) => {
+      const promises = members.map(async ({ userId, howLong }) => {
         let target = await guild.members.fetch(userId);
         if (!target) throw `NotFound: ${userId}`;
         if (guild.ownerId === target.id) throw 'Cannot change the nickname of the server owner';
         if (member.roles.highest <= target.roles.highest) throw 'Cannot edit the nickname of a user with higher permissions than the executor';
 
-        target = await target.edit({ communicationDisabledUntil: timeout || null, reason: `Requested by ${member.user.username} (${member.user.id})` });
+        target = await target.edit({
+          communicationDisabledUntil: howLong ? Date.now() + howLong * 1000 : null,
+          reason: `Requested by ${member.user.username} (${member.user.id})`,
+        });
         return `Timed out ${userId} until ${target.communicationDisabledUntil?.toISOString()}`;
       });
 

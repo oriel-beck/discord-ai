@@ -1,4 +1,4 @@
-import { array, date, object, string, z } from 'zod';
+import { array, number, object, z } from 'zod';
 import { addScheduledRole } from '../../../temprole/temprole-listener.js';
 import { discordIdSchema } from '../../constants.js';
 import tool from '../../tool.js';
@@ -9,14 +9,7 @@ const schema = object({
     object({
       userId: discordIdSchema(),
       roleIds: array(discordIdSchema()).describe("The roles to remove/add the/to the 'userId' at 'time'").min(1),
-      time: string()
-        .datetime()
-        .refine(date => new Date(date) > new Date(), {
-          message: 'Date must be in the future, use `get_current_date_time` to get the current date to add onto',
-        })
-        .describe(
-          'When to remove/add the roles from/to the user automatically (scheduled role). use the get_current_date_time tool to get the current time to add onto it'
-        ),
+      howLong: number().describe('In how many seconds to add the roles to the user automatically (scheduled role).'),
       action: z.enum(['ADD', 'REMOVE']).describe('Wether to add the role after `time` or remove it after `time`'),
     }).strict()
   ),
@@ -27,7 +20,7 @@ export default ({ guild, member }: ToolArguments) =>
     async ({ scheduledRoles }) => {
       const me = await guild.members.fetchMe();
 
-      const promises = scheduledRoles.map(async ({ userId, roleIds, time, action }) => {
+      const promises = scheduledRoles.map(async ({ userId, roleIds, howLong, action }) => {
         const added: string[] = [];
         const errors: string[] = [];
         const guildMember = await guild.members.fetch(userId);
@@ -58,7 +51,7 @@ export default ({ guild, member }: ToolArguments) =>
           }
 
           added.push(roleId);
-          addScheduledRole(userId, roleId, guild.id, action, new Date(time!).getTime() - new Date().getTime());
+          addScheduledRole(userId, roleId, guild.id, action, howLong * 1000);
         }
 
         return {
@@ -87,8 +80,7 @@ export default ({ guild, member }: ToolArguments) =>
     },
     {
       name: 'add_scheduled_roles',
-      description:
-        'Adds scheduled roles which will be removed/added from/to the user after `time`. Can be used to remove multiple roles in X time or add multiple roles in X time. can used in conjunction with add_roles',
+      description: 'Schedule roles to be added or removed from the user after `howLong`. This DOES NOT add or remove roles from the user.\nIf you are asked to add ROLE for X time, use add_roles to add the role instead of scheduling.\nIf you are asked to add ROLE in X time or remove a ROLE in X time then use this tool and not add_roles.',
       schema,
       permissions: ['ManageRoles'],
     }

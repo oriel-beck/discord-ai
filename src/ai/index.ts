@@ -1,5 +1,5 @@
 import SuperMap from '@thunder04/supermap';
-import { GuildTextBasedChannel, Message, PermissionsString } from 'discord.js';
+import { GuildTextBasedChannel, Message } from 'discord.js';
 import { readdir, stat } from 'fs/promises';
 import OpenAI from 'openai';
 import { join } from 'path';
