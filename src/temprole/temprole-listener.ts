@@ -1,9 +1,11 @@
 import { Client, Events } from 'discord.js';
 import { fork } from 'child_process';
-import { TempRoleMessage } from './temproles-background.js';
+import { ScheduledRoleMessage } from './temproles-background.js';
 import { $Enums, PrismaClient } from '@prisma/client';
+import { randomUUID } from 'crypto';
 
 const tempRolesService = fork('./dist/temprole/temproles-background.js');
+const pendingRequests = new Map<string, { reject: (reason?: any) => void; resolve: (reason?: any) => void; timeout: NodeJS.Timeout }>();
 
 let init = false;
 
@@ -24,12 +26,13 @@ export function listen(client: Client) {
     );
   });
 
-  tempRolesService.on('message', async (message: TempRoleMessage) => {
+  tempRolesService.on('message', async (message: ScheduledRoleMessage) => {
     if (!message || typeof message !== 'object') return;
     await removeRole(message);
   });
 
-  async function removeRole(message: TempRoleMessage) {
+  async function removeRole(message: ScheduledRoleMessage | { type: 'confirmation'; id: string; value: string }) {
+    console.log(message);
     // service requested a role removal
     if (message.type === 'removeTempRole') {
       const { userId, roleId, guildId, action } = message;
@@ -50,7 +53,14 @@ export function listen(client: Client) {
         console.error(`[TempRoles]: Failed to remove temp role ${roleId} from ${userId}:`, error);
       } finally {
         // regardless of what happened in the try, remove the scheduled role from the db
-        removeScheduledRole(userId, roleId, guildId, action);
+        await removeScheduledRole(userId, roleId, guildId, action);
+      }
+    } else if (message.type === 'confirmation') {
+      const pending = pendingRequests.get(message.id);
+      if (pending) {
+        clearTimeout(pending.timeout);
+        if (message.value) pending.resolve(message.value);
+        else pending.reject();
       }
     }
   }
@@ -75,10 +85,28 @@ export function listen(client: Client) {
   }
 }
 
-export function addScheduledRole(userId: string, roleId: string, guildId: string, action: $Enums.TemproleMode, durationMs: number) {
-  tempRolesService.send({ type: 'addTempRole', userId, roleId, guildId, action, durationMs });
+export async function addScheduledRole(userId: string, roleId: string, guildId: string, action: $Enums.TemproleMode, durationMs: number) {
+  const id = randomUUID();
+  tempRolesService.send({ type: 'addTempRole', userId, roleId, guildId, action, durationMs, id });
+  return await listenForConfirmation(id);
 }
 
-export function removeScheduledRole(userId: string, roleId: string, guildId: string, action: $Enums.TemproleMode) {
-  tempRolesService.send({ type: 'removeTempRole', userId, roleId, guildId, action });
+export async function removeScheduledRole(userId: string, roleId: string, guildId: string, action: $Enums.TemproleMode) {
+  const id = randomUUID();
+  tempRolesService.send({ type: 'removeTempRole', userId, roleId, guildId, action, id });
+  return await listenForConfirmation(id);
+}
+
+function listenForConfirmation(id: string) {
+  return new Promise<string>((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      if (pendingRequests.has(id)) {
+        pendingRequests.delete(id);
+        reject(new Error('Schedled role timed out'));
+      }
+      // 10 seconds
+    }, 10 * 1000);
+
+    pendingRequests.set(id, { resolve, reject, timeout });
+  });
 }

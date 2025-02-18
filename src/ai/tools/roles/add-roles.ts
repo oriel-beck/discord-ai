@@ -56,12 +56,9 @@ export default ({ guild, member }: ToolArguments) =>
 
         try {
           await guildMember.roles.add(useableIds, `Requested by ${member.user.username} (${member.user.id})`);
-          if (roleSet.howLong) {
-            useableIds.forEach(r => {
-              addScheduledRole(roleSet.userId, r, guild.id, 'REMOVE', roleSet.howLong! * 1000);
-            });
-          }
-          return `Added ${useableIds.join(', ')} to ${roleSet.userId}.`;
+          const promises = useableIds.map(async r => await addScheduledRole(roleSet.userId, r, guild.id, 'REMOVE', roleSet.howLong! * 1000));
+          const scheduledRoles = (await Promise.allSettled(promises)).filter(p => p.status === 'fulfilled').map(p => p.value);
+          return `${roleSet.userId}: Added ${useableIds.join(', ')} and scheduled ${scheduledRoles.join(', ')}`;
         } catch (err) {
           throw `Failed ${roleSet.userId}: ${(err as Error).message}`;
         }

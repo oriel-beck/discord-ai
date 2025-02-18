@@ -11,28 +11,32 @@ const schema = object({
   guildId: string().regex(/\d{17,29}/),
   action: z.enum(['ADD', 'REMOVE']),
   durationMs: optional(number()),
+  id: optional(string().uuid()),
 });
 
-export type TempRoleMessage = z.input<typeof schema>;
+export type ScheduledRoleMessage = z.input<typeof schema>;
 
 process.on('message', async message => {
   if (!message || typeof message !== 'object') return;
 
-  const { type, userId, roleId, guildId, durationMs, action } = schema.parse(message);
+  const { type, userId, roleId, guildId, durationMs, action, id } = schema.parse(message);
 
   if (type === 'addTempRole') {
-    await addScheduledRole(userId, roleId, guildId, action, durationMs!);
+    const res = await addScheduledRole(userId, roleId, guildId, action, durationMs!);
+    process.send?.({ type: 'confirmation', id, value: res.roleId });
   } else if (type === 'removeTempRole') {
-    await removeTempRole(userId, roleId, guildId, action);
+    const res = await removeTempRole(userId, roleId, guildId, action);
+    process.send?.({ type: 'confirmation', id, value: res.roleId });
   } else if (type === 'scheduleRoleRemoval') {
     scheduleTempRoleAction(userId, roleId, guildId, action, durationMs!);
+    process.send?.({ type: 'confirmation', id, value: roleId });
   }
 });
 
 async function addScheduledRole(userId: string, roleId: string, guildId: string, action: $Enums.TemproleMode, durationMs: number) {
   const expiresAt = new Date(Date.now() + durationMs);
 
-  await prisma.temprole.upsert({
+  const result = await prisma.temprole.upsert({
     where: { userId_roleId_guildId_action: { userId, roleId, guildId, action } },
     update: { expiresAt },
     create: { userId, roleId, guildId, expiresAt, action },
@@ -42,6 +46,7 @@ async function addScheduledRole(userId: string, roleId: string, guildId: string,
     const remainingTime = expiresAt.getTime() - Date.now();
     scheduleTempRoleAction(userId, roleId, guildId, action, remainingTime);
   }
+  return result;
 }
 
 function scheduleTempRoleAction(userId: string, roleId: string, guildId: string, action: $Enums.TemproleMode, remainingTime: number) {
@@ -71,5 +76,5 @@ async function removeTempRole(userId: string, roleId: string, guildId: string, a
     tempRoleTimers.delete(key);
   }
 
-  await prisma.temprole.delete({ where: { userId_roleId_guildId_action: { userId, roleId, guildId, action } } });
+  return await prisma.temprole.delete({ where: { userId_roleId_guildId_action: { userId, roleId, guildId, action } } });
 }

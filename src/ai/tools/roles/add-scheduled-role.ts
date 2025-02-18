@@ -50,8 +50,8 @@ export default ({ guild, member }: ToolArguments) =>
             continue;
           }
 
-          added.push(roleId);
-          addScheduledRole(userId, roleId, guild.id, action, howLong * 1000);
+          const res = await addScheduledRole(userId, roleId, guild.id, action, howLong * 1000);
+          added.push(res);
         }
 
         return {
@@ -80,7 +80,8 @@ export default ({ guild, member }: ToolArguments) =>
     },
     {
       name: 'add_scheduled_roles',
-      description: 'Schedule roles to be added or removed from the user after `howLong`. This DOES NOT add or remove roles from the user.\nIf you are asked to add ROLE for X time, use add_roles to add the role instead of scheduling.\nIf you are asked to add ROLE in X time or remove a ROLE in X time then use this tool and not add_roles.',
+      description:
+        'Schedule roles to be added or removed from the user after `howLong`. This DOES NOT add or remove roles from the user.\nIf you are asked to add ROLE for X time, use add_roles to add the role instead of scheduling.\nIf you are asked to add ROLE in X time or remove a ROLE in X time then use this tool and not add_roles.',
       schema,
       permissions: ['ManageRoles'],
     }
