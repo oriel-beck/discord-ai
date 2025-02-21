@@ -1,4 +1,4 @@
-import SuperMap from '@thunder04/supermap';
+import { PrismaClient } from '@prisma/client';
 import { GuildTextBasedChannel, Message } from 'discord.js';
 import { readdir, stat } from 'fs/promises';
 import OpenAI from 'openai';
@@ -14,10 +14,9 @@ interface ToolFile {
 
 export class DiscordAI {
   private readonly openai: OpenAI;
-  /**
-   * TMP Until I integrate a db
-   */
-  public readonly messagesHistory = new SuperMap<string, OpenAI.Chat.Completions.ChatCompletionMessageParam[]>();
+  private readonly prisma = new PrismaClient();
+
+  // This doesn't require a db since if the bot dies the process dies with it.
   public readonly currentlyProccessing = new Set<string>();
   private tools: ToolFile[] = [];
   private devMode = process.env.DEVELOPMENT === 'true';
@@ -60,7 +59,17 @@ export class DiscordAI {
   private async processConversation(message: Message, query: string, originKey: string, savingKey?: string) {
     const messages = await this.getMessages(message, query, originKey);
     const updatedMessages = await this.handleConversation(messages, message);
-    this.messagesHistory.set(savingKey || originKey, updatedMessages);
+    await this.prisma.history.upsert({
+      where: { key_guildId: { key: savingKey || originKey, guildId: message.guildId! } },
+      create: {
+        key: savingKey || originKey,
+        guildId: message.guildId!,
+        messages: [...updatedMessages].splice(1),
+      },
+      update: {
+        messages: [...updatedMessages].splice(1),
+      },
+    });
     return updatedMessages.at(-1);
   }
 
@@ -136,27 +145,20 @@ export class DiscordAI {
       tools,
       model: this.model,
       tool_choice: 'auto',
-      stop: 'END',
     });
   }
 
   private async getMessages(message: Message, query: string, key: string): Promise<OpenAI.Chat.Completions.ChatCompletionMessageParam[]> {
-    const history = this.messagesHistory.get(key);
-    if (history) return [...history, { role: 'user', content: query }];
-
-    const me = await message.guild?.members.fetchMe();
-    return [
-      {
-        role: 'developer',
-        content: `${process.env.SYSTEM_PROMPT!} 
-          You were executed in the server ${message.guildId}
-          Channel: ${message.channelId}
-          Executor user ID (aka me): ${message.author.id}
-          Executor name (aka me): ${message.author.username}
-          You cannot modify roles higher than your highest role position: ${me?.roles.highest.position}`,
-      },
-      { role: 'user', content: query },
-    ];
+    const developerPrompt: OpenAI.Chat.Completions.ChatCompletionMessageParam = {
+      role: 'developer',
+      content: `${process.env.SYSTEM_PROMPT!} 
+              You were executed in the server ${message.guildId}
+              Channel: ${message.channelId}
+              Executor user ID (me): ${message.author.id}
+              Executor name (me): ${message.author.username}`,
+    };
+    const history = await this.prisma.history.findFirst({ where: { key: key } }).then(r => r?.messages || []);
+    return [developerPrompt, ...history, { role: 'user', content: query }];
   }
 
   private getAvailableTools(message: Message) {

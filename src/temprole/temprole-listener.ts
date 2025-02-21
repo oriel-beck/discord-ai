@@ -32,7 +32,6 @@ export function listen(client: Client) {
   });
 
   async function removeRole(message: ScheduledRoleMessage | { type: 'confirmation'; id: string; value: string }) {
-    console.log(message);
     // service requested a role removal
     if (message.type === 'removeTempRole') {
       const { userId, roleId, guildId, action } = message;

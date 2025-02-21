@@ -2,10 +2,10 @@ import { Client, Events, GatewayIntentBits } from 'discord.js';
 import { config } from 'dotenv';
 import { join } from 'path';
 import { DiscordAI } from './ai/index.js';
-import { chat } from './utils/chat.js';
-import { thread } from './utils/thread.js';
-import loadSystemPrompt from './utils/load-system-prompt.js';
 import { listen } from './temprole/temprole-listener.js';
+import { chat } from './utils/chat.js';
+import loadSystemPrompt from './utils/load-system-prompt.js';
+import { thread } from './utils/thread.js';
 
 config();
 await loadSystemPrompt(join(import.meta.dirname, 'system_prompt.txt'));
@@ -31,7 +31,7 @@ client.on(Events.MessageCreate, async message => {
   }
   const split = message.content.split(' ');
 
-  if (message.reference?.messageId && discordAi.messagesHistory.get(message.reference.messageId)) {
+  if (message.reference?.messageId) {
     console.log('Incoming replied message:', message.content);
     await chat(discordAi, message, message.content, 'channel');
   } else if (split[0] === '+chat') {

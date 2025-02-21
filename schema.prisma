@@ -7,6 +7,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator json {
+  provider = "prisma-json-types-generator"
+}
+
 model temprole {
     userId    String 
     roleId    String
@@ -19,4 +23,12 @@ model temprole {
 enum TemproleMode {
   ADD
   REMOVE
+}
+
+model History {
+  key String
+  guildId String
+  /// [Message]
+  messages Json[]
+  @@id([key, guildId])
 }
